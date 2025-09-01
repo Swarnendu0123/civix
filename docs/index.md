@@ -4,7 +4,7 @@ layout: home
 
 hero:
   name: "Civix"
-  text: "Report. Track. Resolve."
+  text: "SIH 2025"
   tagline: My great project tagline
   actions:
     - theme: alt
