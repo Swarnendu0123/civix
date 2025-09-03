@@ -10,45 +10,7 @@ const TechnicianManagement: React.FC = () => {
     sampleWorkers.reduce((sum, worker) => sum + worker.issues_assigned.length, 0) / totalTechnicians * 10
   ) / 10;
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800';
-      case 'on_leave':
-        return 'bg-red-100 text-red-800';
-      case 'on_site':
-        return 'bg-blue-100 text-blue-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
 
-  const getRatingStars = (rating: number) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
-
-    for (let i = 0; i < fullStars; i++) {
-      stars.push(
-        <span key={i} className="text-yellow-400">★</span>
-      );
-    }
-
-    if (hasHalfStar) {
-      stars.push(
-        <span key="half" className="text-yellow-400">☆</span>
-      );
-    }
-
-    const remainingStars = 5 - Math.ceil(rating);
-    for (let i = 0; i < remainingStars; i++) {
-      stars.push(
-        <span key={`empty-${i}`} className="text-gray-300">☆</span>
-      );
-    }
-
-    return stars;
-  };
 
   return (
     <div className="space-y-6">
@@ -197,21 +159,21 @@ const TechnicianManagement: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="text-center">
               <div className="text-2xl font-semibold text-blue-600">
-                {sampleTechnicians.reduce((sum, tech) => sum + (tech.totalResolved || 0), 0)}
+                {sampleWorkers.reduce((sum: number, worker) => sum + worker.pulls_created.length, 0)}
               </div>
-              <div className="text-sm text-gray-500">Total Issues Resolved</div>
+              <div className="text-sm text-gray-500">Total Pull Requests</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-semibold text-green-600">
-                {Math.round(sampleTechnicians.reduce((sum, tech) => sum + (tech.rating || 0), 0) / totalTechnicians * 10) / 10}
+                4.6
               </div>
               <div className="text-sm text-gray-500">Average Rating</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-semibold text-purple-600">
-                {Math.round(sampleTechnicians.filter(tech => tech.status === 'on_site').length / totalTechnicians * 100)}%
+                {Math.round(activeTechnicians / totalTechnicians * 100)}%
               </div>
-              <div className="text-sm text-gray-500">On-site Deployment</div>
+              <div className="text-sm text-gray-500">Currently Active</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-semibold text-orange-600">2.1</div>
