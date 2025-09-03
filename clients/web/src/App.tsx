@@ -1,35 +1,60 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import Layout from './components/Layout/Layout';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import IssueManagement from './pages/IssueManagement';
+import TechnicianManagement from './pages/TechnicianManagement';
+import './App.css';
 
-function App() {
-  const [count, setCount] = useState(0)
+// Protected Route Component
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated } = useAuth();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return <>{children}</>;
+};
 
+// App Component
+const App: React.FC = () => {
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    <AuthProvider>
+      <BrowserRouter>
+        <div className="min-h-screen bg-gray-50">
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="issues" element={<IssueManagement />} />
+              <Route path="technicians" element={<TechnicianManagement />} />
+              {/* Placeholder for Map route */}
+              <Route 
+                path="map" 
+                element={
+                  <div className="text-center py-12">
+                    <h2 className="text-2xl font-bold text-gray-900">Map View</h2>
+                    <p className="mt-2 text-gray-500">Coming Soon - Map visualization of issues</p>
+                  </div>
+                } 
+              />
+            </Route>
+          </Routes>
+        </div>
+      </BrowserRouter>
+    </AuthProvider>
+  );
+};
 
-export default App
+export default App;
