@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useState } from 'react';
 
 export type UserRole = 'admin' | 'department_staff' | 'technician';
 
@@ -34,10 +34,21 @@ const getRolePermissions = (role: UserRole): string[] => {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+export { AuthContext };
 
-  const login = async (email: string, _password: string) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Temporarily default to logged-in admin for demo
+  const [user, setUser] = useState<User | null>({
+    id: '1',
+    name: 'Admin User',
+    email: 'admin@civix.com',
+    role: 'admin',
+    permissions: getRolePermissions('admin')
+  });
+
+  const login = async (email: string, password: string) => {
+    // Mock login - replace with actual API call
+    console.log('Login attempt:', email, password);
     // Mock login - replace with actual API call
     const role: UserRole = email.includes('admin') ? 'admin' : 
                           email.includes('tech') ? 'technician' : 'department_staff';
@@ -75,10 +86,4 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+// Hook to use authentication context

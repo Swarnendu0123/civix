@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 const Login: React.FC = () => {
   const { login } = useAuth();
@@ -22,7 +22,8 @@ const Login: React.FC = () => {
     try {
       await login(formData.email, formData.password);
       navigate('/dashboard');
-    } catch (err) {
+    } catch (error) {
+      console.error('Login failed:', error);
       setError('Invalid credentials');
     } finally {
       setLoading(false);

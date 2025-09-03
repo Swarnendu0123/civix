@@ -1,13 +1,13 @@
 import React from 'react';
 import { FiEye, FiEdit, FiUsers, FiClock, FiCheckCircle } from 'react-icons/fi';
-import { sampleTechnicians } from '../data/sampleTechnicians';
+import { sampleWorkers } from '../data/sampleWorkers';
 import StatCard from '../components/Dashboard/StatCard';
 
 const TechnicianManagement: React.FC = () => {
-  const totalTechnicians = sampleTechnicians.length;
-  const activeTechnicians = sampleTechnicians.filter(tech => tech.status === 'active').length;
+  const totalTechnicians = sampleWorkers.length;
+  const activeTechnicians = sampleWorkers.filter(worker => worker.issues_assigned.length > 0).length;
   const avgOpenTickets = Math.round(
-    sampleTechnicians.reduce((sum, tech) => sum + tech.openTickets, 0) / totalTechnicians * 10
+    sampleWorkers.reduce((sum, worker) => sum + worker.issues_assigned.length, 0) / totalTechnicians * 10
   ) / 10;
 
   const getStatusColor = (status: string) => {
@@ -110,22 +110,16 @@ const TechnicianManagement: React.FC = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Technician
+                  Worker
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Contact
+                  Department
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Specialization
+                  Assigned Issues
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Open Tickets
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Avg. Resolution
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Rating
+                  Pull Requests
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
@@ -136,8 +130,8 @@ const TechnicianManagement: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {sampleTechnicians.map((tech) => (
-                <tr key={tech.id} className="hover:bg-gray-50">
+              {sampleWorkers.map((worker) => (
+                <tr key={worker._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
@@ -145,41 +139,36 @@ const TechnicianManagement: React.FC = () => {
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900">
-                          {tech.name}
+                          {worker.name}
                         </div>
                         <div className="text-sm text-gray-500">
-                          ID: {tech.id}
+                          ID: {worker._id}
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {tech.contact}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {tech.specialization}
-                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                      {tech.openTickets}
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      worker.dept === 'plumber' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {worker.dept}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {tech.avgResolutionTime}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      {worker.issues_assigned.length}
+                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex items-center mr-2">
-                        {tech.rating && getRatingStars(tech.rating)}
-                      </div>
-                      <span className="text-sm text-gray-600">
-                        {tech.rating}
-                      </span>
-                    </div>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                      {worker.pulls_created.length}
+                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(tech.status)}`}>
-                      {tech.status.replace('_', ' ')}
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      worker.issues_assigned.length > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {worker.issues_assigned.length > 0 ? 'Active' : 'Available'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
