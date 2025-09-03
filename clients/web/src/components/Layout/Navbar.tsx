@@ -4,14 +4,14 @@ import {
   FiHome, 
   FiList, 
   FiUsers, 
-  FiBell, 
   FiUser, 
   FiMap, 
   FiMenu,
   FiX,
   FiChevronDown
 } from 'react-icons/fi';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
+import NotificationDropdown from '../NotificationDropdown';
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -63,10 +63,7 @@ const Navbar: React.FC = () => {
           {/* Right side - Notifications and User Menu */}
           <div className="flex items-center space-x-4">
             {/* Notifications */}
-            <button className="relative p-2 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-full">
-              <FiBell className="h-5 w-5" />
-              <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400"></span>
-            </button>
+            <NotificationDropdown />
 
             {/* User Menu */}
             <div className="relative">
