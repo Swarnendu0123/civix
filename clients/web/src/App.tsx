@@ -1,34 +1,57 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import React from 'react'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { ChakraProvider, extendTheme } from '@chakra-ui/react'
+import Layout from './components/Layout/Layout'
+import Login from './pages/Login'
+import Dashboard from './pages/Dashboard'
+import IssueManagement from './pages/IssueManagement'
+// import MapView from './pages/MapView'
+import TechnicianManagement from './pages/TechnicianManagement'
+import IssueDetails from './pages/IssueDetails'
+import { AuthProvider } from './context/AuthContext'
+import { IssueProvider } from './context/IssueContext'
+import { WorkerProvider } from './context/WorkerContext'
 import './App.css'
 
-function App() {
-  const [count, setCount] = useState(0)
+const theme = extendTheme({
+  styles: {
+    global: {
+      body: {
+        bg: 'gray.50',
+      },
+    },
+  },
+  components: {
+    Container: {
+      baseStyle: {
+        maxW: 'container.xl',
+      },
+    },
+  },
+})
 
+const App: React.FC = () => {
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <ChakraProvider theme={theme}>
+      <AuthProvider>
+        <IssueProvider>
+          <WorkerProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/" element={<Layout />}>
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/issues" element={<IssueManagement />} />
+                  <Route path="/issues/:id" element={<IssueDetails />} />
+                  {/* <Route path="/map" element={<MapView />} /> */}
+                  <Route path="/technicians" element={<TechnicianManagement />} />
+                </Route>
+              </Routes>
+            </BrowserRouter>
+          </WorkerProvider>
+        </IssueProvider>
+      </AuthProvider>
+    </ChakraProvider>
   )
 }
 
