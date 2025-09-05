@@ -83,7 +83,7 @@ const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
         }
         return sortOrder === 'desc' ? -comparison : comparison;
       });
-  }, [searchQuery, statusFilter, categoryFilter, urgencyFilter, sortBy, sortOrder]);
+  }, [tickets, searchQuery, statusFilter, categoryFilter, urgencyFilter, sortBy, sortOrder]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
