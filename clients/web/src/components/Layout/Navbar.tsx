@@ -50,7 +50,7 @@ const Navbar: React.FC = () => {
           {/* Logo and Navigation */}
           <div className="flex items-center">
             <Link to="/dashboard" className="flex-shrink-0">
-              <span className="text-xl font-bold text-gray-900">CIVIX</span>
+              <span className="text-xl font-bold text-gray-900">Civix Admin</span>
             </Link>
             
             {/* Desktop Navigation */}
