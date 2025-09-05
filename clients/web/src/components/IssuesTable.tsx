@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   FiSearch, 
   FiMapPin, 
@@ -6,9 +6,10 @@ import {
   FiThumbsDown,
   FiClock,
   FiFilter,
-  FiEye
+  FiEye,
+  FiLoader
 } from 'react-icons/fi';
-import { sampleTickets } from '../data/sampleTickets';
+import api from '../services/api';
 import type { Ticket } from '../types';
 
 interface IssuesTableProps {
@@ -16,6 +17,9 @@ interface IssuesTableProps {
 }
 
 const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -23,8 +27,27 @@ const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
   const [sortBy, setSortBy] = useState<'opening_time' | 'votes' | 'urgency'>('opening_time');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
+  // Fetch tickets from backend
+  useEffect(() => {
+    const fetchTickets = async () => {
+      try {
+        setLoading(true);
+        const response = await api.tickets.getTickets({ limit: 100 }); // Get more tickets
+        setTickets(response.tickets || []);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching tickets:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load tickets');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTickets();
+  }, []);
+
   const filteredAndSortedTickets = useMemo(() => {
-    return sampleTickets
+    return tickets
       .filter(ticket => {
         if (statusFilter !== 'all' && ticket.status !== statusFilter) return false;
         if (categoryFilter !== 'all' && ticket.issue_category !== categoryFilter) return false;
@@ -88,7 +111,7 @@ const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
     }
   };
 
-  const categories = [...new Set(sampleTickets.map(ticket => ticket.issue_category))];
+  const categories = [...new Set(tickets.map(ticket => ticket.issue_category))];
 
   const handleSort = (column: 'opening_time' | 'votes' | 'urgency') => {
     if (sortBy === column) {
@@ -113,8 +136,31 @@ const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
         </div>
       </div>
 
+      {/* Loading State */}
+      {loading && (
+        <div className="bg-white p-8 rounded-lg shadow">
+          <div className="flex items-center justify-center">
+            <FiLoader className="animate-spin h-8 w-8 text-blue-600" />
+            <span className="ml-2 text-gray-600">Loading tickets...</span>
+          </div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="flex">
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Error loading tickets</h3>
+              <p className="mt-2 text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow space-y-4">
+      {!loading && !error && (
+        <div className="bg-white p-4 rounded-lg shadow space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Search */}
           <div className="lg:col-span-2">
@@ -177,9 +223,11 @@ const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
           </div>
         </div>
       </div>
-
+      )}
+      
       {/* Table */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
+      {!loading && !error && (
+        <div className="bg-white shadow overflow-hidden sm:rounded-md">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -320,7 +368,8 @@ const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
             <p className="mt-1 text-sm text-gray-500">Try adjusting your search or filter criteria.</p>
           </div>
         )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

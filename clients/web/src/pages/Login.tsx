@@ -114,10 +114,11 @@ const Login: React.FC = () => {
           </div>
 
           <div className="text-sm text-gray-600">
-            <p>Demo accounts:</p>
-            <p>• admin@civix.com - Admin User</p>
-            <p>• tech@civix.com - Technician</p>
-            <p>• staff@civix.com - Department Staff</p>
+            <p>Demo accounts (password: "password"):</p>
+            <p>• admin@authority.gov - Municipal Authority</p>
+            <p>• raj@civix.com - Water Technician</p>
+            <p>• priya@civix.com - Electricity Technician</p>
+            <p>• john@example.com - Citizen User</p>
           </div>
         </form>
       </div>

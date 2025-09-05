@@ -1,13 +1,17 @@
-import React, { createContext, useState } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
+import api, { setAuthToken } from '../services/api';
 
-export type UserRole = 'admin' | 'department_staff' | 'technician';
+export type UserRole = 'authority' | 'technician' | 'citizen';
 
 interface User {
-  id: string;
+  _id: string;
   name: string;
   email: string;
   role: UserRole;
   department?: string;
+  specialization?: string;
+  contact?: string;
+  points?: number;
   permissions: string[];
 }
 
@@ -21,12 +25,12 @@ interface AuthContextType {
 
 const getRolePermissions = (role: UserRole): string[] => {
   switch (role) {
-    case 'admin':
+    case 'authority':
       return ['manage_issues', 'assign_technicians', 'view_all', 'manage_technicians'];
-    case 'department_staff':
-      return ['view_department_issues', 'update_issues'];
     case 'technician':
       return ['view_assigned_issues', 'update_status', 'upload_proof'];
+    case 'citizen':
+      return ['create_issues', 'view_own_issues', 'vote_issues'];
     default:
       return [];
   }
@@ -37,35 +41,52 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export { AuthContext };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Temporarily default to logged-in admin for demo
-  const [user, setUser] = useState<User | null>({
-    id: '1',
-    name: 'Admin User',
-    email: 'admin@civix.com',
-    role: 'admin',
-    permissions: getRolePermissions('admin')
-  });
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    // Check for existing auth token on app load
+    const token = localStorage.getItem('civix_auth_token');
+    if (token) {
+      // Set the token and try to get user profile
+      setAuthToken(token);
+      
+      // For demo purposes, auto-login with authority user
+      // In production, you would validate the token with the backend
+      const defaultUser: User = {
+        _id: 'auth-001',
+        name: 'Municipal Authority',
+        email: 'admin@authority.gov',
+        role: 'authority',
+        permissions: getRolePermissions('authority')
+      };
+      setUser(defaultUser);
+    }
+  }, []);
 
   const login = async (email: string, password: string) => {
-    // Mock login - replace with actual API call
-    console.log('Login attempt:', email, password);
-    // Mock login - replace with actual API call
-    const role: UserRole = email.includes('admin') ? 'admin' : 
-                          email.includes('tech') ? 'technician' : 'department_staff';
-    
-    const mockUser: User = {
-      id: '1',
-      name: email.includes('admin') ? 'Admin User' : 
-            email.includes('tech') ? 'Tech User' : 'Department Staff',
-      email,
-      role,
-      department: role === 'department_staff' ? 'Water' : undefined,
-      permissions: getRolePermissions(role)
-    };
-    setUser(mockUser);
+    try {
+      const response = await api.auth.login(email, password);
+      
+      const userData: User = {
+        _id: response.user._id,
+        name: response.user.name,
+        email: response.user.email,
+        role: response.user.role as UserRole,
+        specialization: response.user.specialization,
+        contact: response.user.contact,
+        points: response.user.points,
+        permissions: getRolePermissions(response.user.role as UserRole)
+      };
+      
+      setUser(userData);
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   };
 
   const logout = () => {
+    api.auth.logout();
     setUser(null);
   };
 
