@@ -10,13 +10,13 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { useTheme } from '@/hooks/useTheme';
 import { Colors } from '@/constants/Colors';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import api from '@/services/api';
 
 export default function RaiseIssueScreen() {
-  const colorScheme = useColorScheme();
+  const { colorScheme } = useTheme();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [issueTitle, setIssueTitle] = useState('');

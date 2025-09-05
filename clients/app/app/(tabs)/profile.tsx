@@ -8,12 +8,13 @@ import {
   Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { useTheme } from '@/hooks/useTheme';
 import { Colors } from '@/constants/Colors';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import ThemeToggle from '@/components/ThemeToggle';
 
 export default function ProfileScreen() {
-  const colorScheme = useColorScheme();
+  const { colorScheme } = useTheme();
 
   // Sample user data - in real app would come from auth context
   const user = {
@@ -150,6 +151,8 @@ export default function ProfileScreen() {
 
         {/* Menu Options */}
         <View style={styles.menuSection}>
+          <ThemeToggle />
+          
           <TouchableOpacity style={styles.menuItem} onPress={handleSettings}>
             <View style={styles.menuItemLeft}>
               <IconSymbol name="gear" size={24} color={Colors[colorScheme].text} />
