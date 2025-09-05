@@ -860,22 +860,48 @@ app.get('/api/technicians', async (req, res) => {
     try {
         const { specialization, status, department } = req.query;
         
-        const filter = { role: 'technician' };
-        
-        if (specialization) {
-            filter.specialization = { $regex: specialization, $options: 'i' };
+        if (isConnectedToDB) {
+            // MongoDB operations
+            const filter = { role: 'technician' };
+            
+            if (specialization) {
+                filter.specialization = { $regex: specialization, $options: 'i' };
+            }
+            
+            if (status) {
+                filter.status = status;
+            }
+            
+            if (department) {
+                filter.dept = { $regex: department, $options: 'i' };
+            }
+            
+            const technicians = await User.find(filter);
+            res.json(technicians);
+        } else {
+            // Fallback storage operations
+            let technicians = fallbackStorage.users.filter(user => user.role === 'technician');
+            
+            if (specialization) {
+                technicians = technicians.filter(tech => 
+                    tech.specialization && 
+                    tech.specialization.toLowerCase().includes(specialization.toLowerCase())
+                );
+            }
+            
+            if (status) {
+                technicians = technicians.filter(tech => tech.status === status);
+            }
+            
+            if (department) {
+                technicians = technicians.filter(tech => 
+                    tech.dept && 
+                    tech.dept.toLowerCase().includes(department.toLowerCase())
+                );
+            }
+            
+            res.json(technicians);
         }
-        
-        if (status) {
-            filter.status = status;
-        }
-        
-        if (department) {
-            filter.dept = { $regex: department, $options: 'i' };
-        }
-        
-        const technicians = await User.find(filter);
-        res.json(technicians);
     } catch (error) {
         console.error('Get technicians error:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -890,12 +916,21 @@ app.get('/api/technicians/:id', async (req, res) => {
         }
         
         // Get assigned tickets
-        const assignedTickets = await Ticket.find({
-            _id: { $in: technician.issues_assigned }
-        });
+        let assignedTickets = [];
+        if (isConnectedToDB) {
+            assignedTickets = await Ticket.find({
+                _id: { $in: technician.issues_assigned }
+            });
+        } else {
+            assignedTickets = fallbackStorage.tickets.filter(ticket =>
+                technician.issues_assigned && technician.issues_assigned.includes(ticket._id)
+            );
+        }
+        
+        const technicianData = isConnectedToDB ? technician.toObject() : technician;
         
         res.json({
-            ...technician.toObject(),
+            ...technicianData,
             assignedTickets
         });
     } catch (error) {

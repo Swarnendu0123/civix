@@ -115,7 +115,7 @@ const Login: React.FC = () => {
 
           <div className="text-sm text-gray-600">
             <p>Demo accounts (password: "password"):</p>
-            <p>• admin@authority.gov - Municipal Authority</p>
+            <p>• admin@mmc.gov.in - Municipal Authority</p>
             <p>• raj@civix.com - Water Technician</p>
             <p>• priya@civix.com - Electricity Technician</p>
             <p>• john@example.com - Citizen User</p>
