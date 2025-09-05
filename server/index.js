@@ -6,9 +6,17 @@ const { v4: uuidv4 } = require('uuid');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+require('dotenv').config();
+
+// Database and Models
+const connectDB = require('./config/database');
+const { User, Ticket, ResolveRequest, Authority } = require('./models');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Connect to MongoDB
+connectDB();
 
 // Middleware
 app.use(helmet());
@@ -50,182 +58,48 @@ const upload = multer({
     }
 });
 
-// In-memory data storage (in a real app, this would be a database)
-let users = [
-    {
-        _id: 'user-001',
-        name: 'John Doe',
-        email: 'john@example.com',
-        password: 'hashedpassword123', // In real app, this would be bcrypt hashed
-        points: 250,
-        issues: [],
-        role: 'citizen'
-    },
-    {
-        _id: 'user-002',
-        name: 'Jane Smith',
-        email: 'jane@example.com',
-        password: 'hashedpassword456',
-        points: 180,
-        issues: [],
-        role: 'citizen'
-    }
-];
-
-let tickets = [
-    {
-        _id: 'TICK-001',
-        creator_id: 'user-001',
-        creator_name: 'John Doe',
-        status: 'open',
-        issue_name: 'Pothole near MMM',
-        issue_category: 'Roads',
-        issue_description: 'Large pothole causing traffic issues on Main Street',
-        image_url: '/uploads/sample-pothole.jpg',
-        tags: ['urgent', 'traffic'],
-        votes: { upvotes: 15, downvotes: 2 },
-        urgency: 'critical',
-        location: {
-            coordinates: { lat: 19.0760, lng: 72.8777 },
-            address: 'Main Street, Sector 12'
-        },
-        opening_time: new Date('2024-01-15T10:30:00Z'),
-        closing_time: null,
-        authority: 'auth-001',
-        sub_authority: null,
-        assigned_technician: null
-    },
-    {
-        _id: 'TICK-002',
-        creator_id: 'user-002',
-        creator_name: 'Jane Smith',
-        status: 'in process',
-        issue_name: 'Street light not working',
-        issue_category: 'Electricity',
-        issue_description: 'Multiple street lights not working in sector 7',
-        image_url: '/uploads/sample-streetlight.jpg',
-        tags: ['safety', 'lighting'],
-        votes: { upvotes: 8, downvotes: 0 },
-        urgency: 'moderate',
-        location: {
-            coordinates: { lat: 19.0820, lng: 72.8800 },
-            address: 'Park Avenue, Block A'
-        },
-        opening_time: new Date('2024-01-14T14:20:00Z'),
-        closing_time: null,
-        authority: 'auth-001',
-        sub_authority: 'sub-auth-001',
-        assigned_technician: 'TECH-002'
-    },
-    {
-        _id: 'TICK-003',
-        creator_id: 'user-001',
-        creator_name: 'John Doe',
-        status: 'resolved',
-        issue_name: 'Water leak',
-        issue_category: 'Water',
-        issue_description: 'Water pipe leakage causing waterlogging',
-        image_url: '/uploads/sample-waterleak.jpg',
-        tags: ['water', 'urgent'],
-        votes: { upvotes: 12, downvotes: 1 },
-        urgency: 'moderate',
-        location: {
-            coordinates: { lat: 19.0750, lng: 72.8790 },
-            address: 'Green Lane, Colony 3'
-        },
-        opening_time: new Date('2024-01-13T09:15:00Z'),
-        closing_time: new Date('2024-01-14T16:30:00Z'),
-        authority: 'auth-001',
-        sub_authority: 'sub-auth-002',
-        assigned_technician: 'TECH-001'
-    }
-];
-
-let technicians = [
-    {
-        _id: 'TECH-001',
-        name: 'Raj Sharma',
-        email: 'raj@civix.com',
-        password: 'hashedpassword789',
-        contact: '+91 98765-43210',
-        specialization: 'Water Supply',
-        dept: 'Water Department',
-        openTickets: 3,
-        avgResolutionTime: '1.5 days',
-        status: 'active',
-        totalResolved: 145,
-        rating: 4.8,
-        issues_assigned: ['TICK-003'],
-        pulls_created: [],
-        role: 'technician'
-    },
-    {
-        _id: 'TECH-002',
-        name: 'Priya Patel',
-        email: 'priya@civix.com',
-        password: 'hashedpassword101',
-        contact: '+91 98765-43211',
-        specialization: 'Electricity',
-        dept: 'Electrical Department',
-        openTickets: 5,
-        avgResolutionTime: '2.1 days',
-        status: 'active',
-        totalResolved: 98,
-        rating: 4.5,
-        issues_assigned: ['TICK-002'],
-        pulls_created: [],
-        role: 'technician'
-    },
-    {
-        _id: 'TECH-003',
-        name: 'Kumar Singh',
-        email: 'kumar@civix.com',
-        password: 'hashedpassword202',
-        contact: '+91 98765-43212',
-        specialization: 'Roads',
-        dept: 'Public Works',
-        openTickets: 2,
-        avgResolutionTime: '3.2 days',
-        status: 'on_site',
-        totalResolved: 76,
-        rating: 4.2,
-        issues_assigned: [],
-        pulls_created: [],
-        role: 'technician'
-    }
-];
-
-let authorities = [
-    {
-        _id: 'auth-001',
-        name: 'Mumbai Municipal Corporation',
-        email: 'admin@mmc.gov.in',
-        password: 'hashedpassword303',
-        location: {
-            coordinates: { lat: 19.0760, lng: 72.8777 },
-            address: 'BMC Building, Mumbai'
-        },
-        issues: ['TICK-001', 'TICK-002', 'TICK-003'],
-        role: 'authority'
-    }
-];
-
-let resolveRequests = [];
-
 // Helper functions
-const findUserById = (id) => users.find(user => user._id === id);
-const findTechnicianById = (id) => technicians.find(tech => tech._id === id);
-const findTicketById = (id) => tickets.find(ticket => ticket._id === id);
+const findUserById = async (id) => {
+    try {
+        return await User.findById(id);
+    } catch (error) {
+        return null;
+    }
+};
+
+const findTechnicianById = async (id) => {
+    try {
+        return await User.findOne({ _id: id, role: 'technician' });
+    } catch (error) {
+        return null;
+    }
+};
+
+const findTicketById = async (id) => {
+    try {
+        return await Ticket.findById(id);
+    } catch (error) {
+        return null;
+    }
+};
+
+const findAuthorityById = async (id) => {
+    try {
+        return await Authority.findById(id);
+    } catch (error) {
+        return null;
+    }
+};
 
 // Authentication middleware (simplified - in real app use JWT)
-const authenticateUser = (req, res, next) => {
+const authenticateUser = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.status(401).json({ error: 'Authentication required' });
     }
     
     const userId = authHeader.substring(7); // Remove 'Bearer ' prefix
-    const user = findUserById(userId) || findTechnicianById(userId);
+    const user = await findUserById(userId) || await findAuthorityById(userId);
     
     if (!user) {
         return res.status(401).json({ error: 'Invalid user' });
@@ -243,71 +117,92 @@ app.get('/api/health', (req, res) => {
 });
 
 // Authentication endpoints
-app.post('/api/auth/login', (req, res) => {
-    const { email, password } = req.body;
-    
-    if (!email || !password) {
-        return res.status(400).json({ error: 'Email and password are required' });
-    }
-    
-    // Check all user types
-    const user = [...users, ...technicians, ...authorities].find(u => u.email === email);
-    
-    if (!user || user.password !== password) { // In real app, use bcrypt.compare
-        return res.status(401).json({ error: 'Invalid credentials' });
-    }
-    
-    // In real app, generate JWT token
-    const token = user._id;
-    
-    res.json({
-        token,
-        user: {
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            points: user.points || 0,
-            specialization: user.specialization || null
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        
+        if (!email || !password) {
+            return res.status(400).json({ error: 'Email and password are required' });
         }
-    });
+        
+        // Check all user types (User and Authority)
+        let user = await User.findOne({ email });
+        if (!user) {
+            user = await Authority.findOne({ email });
+        }
+        
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+        
+        // Compare password using the model method
+        const isPasswordValid = await user.comparePassword(password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+        
+        // In real app, generate JWT token
+        const token = user._id;
+        
+        res.json({
+            token,
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                points: user.points || 0,
+                specialization: user.specialization || null
+            }
+        });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
-app.post('/api/auth/register', (req, res) => {
-    const { name, email, password, role = 'citizen' } = req.body;
-    
-    if (!name || !email || !password) {
-        return res.status(400).json({ error: 'Name, email and password are required' });
-    }
-    
-    // Check if user already exists
-    const existingUser = [...users, ...technicians, ...authorities].find(u => u.email === email);
-    if (existingUser) {
-        return res.status(409).json({ error: 'User already exists' });
-    }
-    
-    const newUser = {
-        _id: uuidv4(),
-        name,
-        email,
-        password, // In real app, hash with bcrypt
-        points: 0,
-        issues: [],
-        role
-    };
-    
-    users.push(newUser);
-    
-    res.status(201).json({
-        token: newUser._id,
-        user: {
-            _id: newUser._id,
-            name: newUser.name,
-            email: newUser.email,
-            role: newUser.role,
-            points: newUser.points
+app.post('/api/auth/register', async (req, res) => {
+    try {
+        const { name, email, password, role = 'citizen' } = req.body;
+        
+        if (!name || !email || !password) {
+            return res.status(400).json({ error: 'Name, email and password are required' });
         }
-    });
+        
+        // Check if user already exists
+        const existingUser = await User.findOne({ email }) || await Authority.findOne({ email });
+        if (existingUser) {
+            return res.status(409).json({ error: 'User already exists' });
+        }
+        
+        const newUser = new User({
+            name,
+            email,
+            password, // Will be hashed by the pre-save middleware
+            points: 0,
+            issues: [],
+            role
+        });
+        
+        await newUser.save();
+        
+        res.status(201).json({
+            token: newUser._id,
+            user: {
+                _id: newUser._id,
+                name: newUser.name,
+                email: newUser.email,
+                role: newUser.role,
+                points: newUser.points
+            }
+        });
+    } catch (error) {
+        console.error('Registration error:', error);
+        if (error.code === 11000) {
+            return res.status(409).json({ error: 'User already exists' });
+        }
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 // User endpoints
@@ -326,50 +221,58 @@ app.get('/api/users/profile', authenticateUser, (req, res) => {
     });
 });
 
-app.put('/api/users/profile', authenticateUser, (req, res) => {
-    const { name, contact } = req.body;
-    const user = req.user;
-    
-    if (user.role === 'citizen') {
-        const userIndex = users.findIndex(u => u._id === user._id);
-        if (userIndex !== -1) {
-            users[userIndex] = { ...users[userIndex], name: name || users[userIndex].name };
+app.put('/api/users/profile', authenticateUser, async (req, res) => {
+    try {
+        const { name, contact } = req.body;
+        const userId = req.user._id;
+        
+        const updateData = {};
+        if (name) updateData.name = name;
+        if (contact) updateData.contact = contact;
+        
+        if (req.user.role === 'citizen' || req.user.role === 'technician') {
+            await User.findByIdAndUpdate(userId, updateData);
+        } else if (req.user.role === 'authority') {
+            await Authority.findByIdAndUpdate(userId, updateData);
         }
-    } else if (user.role === 'technician') {
-        const techIndex = technicians.findIndex(t => t._id === user._id);
-        if (techIndex !== -1) {
-            technicians[techIndex] = {
-                ...technicians[techIndex],
-                name: name || technicians[techIndex].name,
-                contact: contact || technicians[techIndex].contact
-            };
-        }
+        
+        res.json({ message: 'Profile updated successfully' });
+    } catch (error) {
+        console.error('Profile update error:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
-    
-    res.json({ message: 'Profile updated successfully' });
 });
 
 // Analytics endpoint
-app.get('/api/analytics', authenticateUser, (req, res) => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
-    const activeTickets = tickets.filter(ticket => ticket.status === 'open' || ticket.status === 'in process').length;
-    const resolvedToday = tickets.filter(ticket => 
-        ticket.status === 'resolved' && 
-        ticket.closing_time && 
-        new Date(ticket.closing_time) >= today
-    ).length;
-    const inProgress = tickets.filter(ticket => ticket.status === 'in process').length;
-    
-    res.json({
-        activeTickets,
-        resolvedToday,
-        inProgress,
-        totalTickets: tickets.length,
-        totalUsers: users.length,
-        totalTechnicians: technicians.length
-    });
+app.get('/api/analytics', authenticateUser, async (req, res) => {
+    try {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        const activeTickets = await Ticket.countDocuments({ 
+            status: { $in: ['open', 'in process'] } 
+        });
+        const resolvedToday = await Ticket.countDocuments({
+            status: 'resolved',
+            closing_time: { $gte: today }
+        });
+        const inProgress = await Ticket.countDocuments({ status: 'in process' });
+        const totalTickets = await Ticket.countDocuments();
+        const totalUsers = await User.countDocuments();
+        const totalTechnicians = await User.countDocuments({ role: 'technician' });
+        
+        res.json({
+            activeTickets,
+            resolvedToday,
+            inProgress,
+            totalTickets,
+            totalUsers,
+            totalTechnicians
+        });
+    } catch (error) {
+        console.error('Analytics error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 // Ticket endpoints
