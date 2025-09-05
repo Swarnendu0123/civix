@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import IssueManagement from './pages/IssueManagement';
 import TechnicianManagement from './pages/TechnicianManagement';
+import UserManagement from './pages/UserManagement';
 import './App.css';
 
 // Protected Route Component
@@ -40,6 +41,7 @@ const App: React.FC = () => {
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="issues" element={<IssueManagement />} />
               <Route path="technicians" element={<TechnicianManagement />} />
+              <Route path="users" element={<UserManagement />} />
               {/* Placeholder for Map route */}
               <Route 
                 path="map" 

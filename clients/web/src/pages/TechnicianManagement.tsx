@@ -73,17 +73,14 @@ const TechnicianManagement: React.FC = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleAssignTicket = async (technicianId: string, ticketId: string) => {
-    try {
-      await api.tickets.assignTicket(ticketId, technicianId);
-      // Refresh technicians data
-      const apiTechnicians = await api.technicians.getTechnicians();
-      const uiTechnicians = apiTechnicians.map(api.transformers.apiTechnicianToUI);
-      setTechnicians(uiTechnicians);
-    } catch (err) {
-      console.error('Error assigning ticket:', err);
-      alert('Failed to assign ticket. Please try again.');
-    }
+  const handleUpdateTechnician = (updatedTechnician: Technician) => {
+    setTechnicians(prev => prev.map(tech => 
+      tech.id === updatedTechnician.id ? updatedTechnician : tech
+    ));
+  };
+
+  const handleDeleteTechnician = (technicianId: string) => {
+    setTechnicians(prev => prev.filter(tech => tech.id !== technicianId));
   };
 
   // Filtering and sorting logic
@@ -410,7 +407,8 @@ const TechnicianManagement: React.FC = () => {
         technician={selectedTechnician}
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
-        onAssignTicket={handleAssignTicket}
+        onUpdate={handleUpdateTechnician}
+        onDelete={handleDeleteTechnician}
       />
     </div>
   );

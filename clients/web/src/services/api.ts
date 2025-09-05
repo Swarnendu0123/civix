@@ -204,6 +204,25 @@ export const techniciansAPI = {
     });
   },
 
+  async updateTechnician(id: string, data: {
+    name?: string;
+    contact?: string;
+    specialization?: string;
+    dept?: string;
+    status?: string;
+  }) {
+    return apiRequest(`/technicians/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async deleteTechnician(id: string) {
+    return apiRequest(`/technicians/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
   async getTechnicianTasks(id: string, status?: string) {
     const params = status ? `?status=${status}` : '';
     return apiRequest(`/technicians/${id}/tasks${params}`);
@@ -235,6 +254,112 @@ export const uploadAPI = {
     }
 
     return response.json();
+  }
+};
+
+// Admin APIs
+export const adminAPI = {
+  // User Management
+  async getUsers(params: {
+    page?: number;
+    limit?: number;
+    role?: string;
+    status?: string;
+    search?: string;
+  } = {}) {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined) {
+        searchParams.append(key, value.toString());
+      }
+    });
+    
+    const endpoint = `/admin/users${searchParams.toString() ? '?' + searchParams.toString() : ''}`;
+    return apiRequest(endpoint);
+  },
+
+  async updateUserStatus(id: string, status: string) {
+    return apiRequest(`/admin/users/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    });
+  },
+
+  async deleteUser(id: string) {
+    return apiRequest(`/admin/users/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Notifications Management
+  async getNotifications(params: {
+    page?: number;
+    limit?: number;
+    read?: boolean;
+  } = {}) {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined) {
+        searchParams.append(key, value.toString());
+      }
+    });
+    
+    const endpoint = `/admin/notifications${searchParams.toString() ? '?' + searchParams.toString() : ''}`;
+    return apiRequest(endpoint);
+  },
+
+  async markNotificationRead(id: string) {
+    return apiRequest(`/admin/notifications/${id}/read`, {
+      method: 'PUT',
+    });
+  },
+
+  // Category Management
+  async getCategories() {
+    return apiRequest('/admin/categories');
+  },
+
+  async createCategory(data: {
+    name: string;
+    description: string;
+    color?: string;
+  }) {
+    return apiRequest('/admin/categories', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Advanced Analytics
+  async getReports(params: {
+    timeframe?: string;
+    type?: string;
+  } = {}) {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined) {
+        searchParams.append(key, value);
+      }
+    });
+    
+    const endpoint = `/admin/analytics/reports${searchParams.toString() ? '?' + searchParams.toString() : ''}`;
+    return apiRequest(endpoint);
+  },
+
+  async getPerformanceAnalytics() {
+    return apiRequest('/admin/analytics/performance');
+  },
+
+  // System Settings
+  async getSettings() {
+    return apiRequest('/admin/settings');
+  },
+
+  async updateSettings(settings: any) {
+    return apiRequest('/admin/settings', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
   }
 };
 
@@ -287,5 +412,6 @@ export default {
   tickets: ticketsAPI,
   technicians: techniciansAPI,
   upload: uploadAPI,
+  admin: adminAPI,
   transformers
 };
