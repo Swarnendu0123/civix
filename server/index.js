@@ -746,21 +746,45 @@ app.get('/api/technicians', async (req, res) => {
     try {
         const { specialization, status, department } = req.query;
         
-        const filter = { role: 'technician' };
+        let technicians = [];
         
-        if (specialization) {
-            filter.specialization = { $regex: specialization, $options: 'i' };
+        if (isConnectedToDB) {
+            const filter = { role: 'technician' };
+            
+            if (specialization) {
+                filter.specialization = { $regex: specialization, $options: 'i' };
+            }
+            
+            if (status) {
+                filter.status = status;
+            }
+            
+            if (department) {
+                filter.dept = { $regex: department, $options: 'i' };
+            }
+            
+            technicians = await User.find(filter);
+        } else {
+            // Fallback storage operations
+            technicians = fallbackStorage.users.filter(user => user.role === 'technician');
+            
+            if (specialization) {
+                technicians = technicians.filter(tech => 
+                    tech.specialization && tech.specialization.toLowerCase().includes(specialization.toLowerCase())
+                );
+            }
+            
+            if (status) {
+                technicians = technicians.filter(tech => tech.status === status);
+            }
+            
+            if (department) {
+                technicians = technicians.filter(tech => 
+                    tech.dept && tech.dept.toLowerCase().includes(department.toLowerCase())
+                );
+            }
         }
         
-        if (status) {
-            filter.status = status;
-        }
-        
-        if (department) {
-            filter.dept = { $regex: department, $options: 'i' };
-        }
-        
-        const technicians = await User.find(filter);
         res.json(technicians);
     } catch (error) {
         console.error('Get technicians error:', error);
@@ -790,7 +814,7 @@ app.get('/api/technicians/:id', async (req, res) => {
     }
 });
 
-app.post('/api/technicians', async (req, res) => {
+app.post('/api/technicians', authenticateToken, async (req, res) => {
     try {
         const { name, email, contact, specialization, dept } = req.body;
         
@@ -800,31 +824,60 @@ app.post('/api/technicians', async (req, res) => {
             });
         }
         
-        // Check if user already exists
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            return res.status(409).json({ error: 'User with this email already exists' });
+        if (isConnectedToDB) {
+            // Check if user already exists
+            const existingUser = await User.findOne({ email });
+            if (existingUser) {
+                return res.status(409).json({ error: 'User with this email already exists' });
+            }
+            
+            const newTechnician = new User({
+                name,
+                email,
+                password: 'defaultpassword123', // In real app, generate secure password
+                contact,
+                specialization,
+                dept: dept || 'General',
+                openTickets: 0,
+                avgResolutionTime: '0 days',
+                status: 'active',
+                totalResolved: 0,
+                rating: 0,
+                issues_assigned: [],
+                pulls_created: [],
+                role: 'technician'
+            });
+            
+            await newTechnician.save();
+            res.status(201).json(newTechnician);
+        } else {
+            // Fallback storage operations
+            const existingUser = fallbackStorage.users.find(u => u.email === email);
+            if (existingUser) {
+                return res.status(409).json({ error: 'User with this email already exists' });
+            }
+            
+            const newTechnician = {
+                _id: require('uuid').v4(),
+                name,
+                email,
+                password: 'defaultpassword123',
+                contact,
+                specialization,
+                dept: dept || 'General',
+                openTickets: 0,
+                avgResolutionTime: '0 days',
+                status: 'active',
+                totalResolved: 0,
+                rating: 0,
+                issues_assigned: [],
+                pulls_created: [],
+                role: 'technician'
+            };
+            
+            fallbackStorage.users.push(newTechnician);
+            res.status(201).json(newTechnician);
         }
-        
-        const newTechnician = new User({
-            name,
-            email,
-            password: 'defaultpassword123', // In real app, generate secure password
-            contact,
-            specialization,
-            dept: dept || 'General',
-            openTickets: 0,
-            avgResolutionTime: '0 days',
-            status: 'active',
-            totalResolved: 0,
-            rating: 0,
-            issues_assigned: [],
-            pulls_created: [],
-            role: 'technician'
-        });
-        
-        await newTechnician.save();
-        res.status(201).json(newTechnician);
     } catch (error) {
         console.error('Create technician error:', error);
         if (error.code === 11000) {
