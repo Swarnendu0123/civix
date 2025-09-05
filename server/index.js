@@ -526,42 +526,86 @@ app.get('/api/tickets', async (req, res) => {
     try {
         const { status, category, urgency, page = 1, limit = 10, userId } = req.query;
         
-        const filter = {};
-        
-        if (status) {
-            filter.status = status;
-        }
-        
-        if (category) {
-            filter.issue_category = { $regex: category, $options: 'i' };
-        }
-        
-        if (urgency) {
-            filter.urgency = urgency;
-        }
-        
-        if (userId) {
-            filter.creator_id = userId;
-        }
-        
-        // Get total count for pagination
-        const total = await Ticket.countDocuments(filter);
-        
-        // Get paginated results, sorted by creation time (newest first)
-        const tickets = await Ticket.find(filter)
-            .sort({ opening_time: -1 })
-            .skip((page - 1) * limit)
-            .limit(parseInt(limit));
-        
-        res.json({
-            tickets,
-            pagination: {
-                page: parseInt(page),
-                limit: parseInt(limit),
-                total,
-                pages: Math.ceil(total / limit)
+        if (isConnectedToDB) {
+            // MongoDB operations
+            const filter = {};
+            
+            if (status) {
+                filter.status = status;
             }
-        });
+            
+            if (category) {
+                filter.issue_category = { $regex: category, $options: 'i' };
+            }
+            
+            if (urgency) {
+                filter.urgency = urgency;
+            }
+            
+            if (userId) {
+                filter.creator_id = userId;
+            }
+            
+            // Get total count for pagination
+            const total = await Ticket.countDocuments(filter);
+            
+            // Get paginated results, sorted by creation time (newest first)
+            const tickets = await Ticket.find(filter)
+                .sort({ opening_time: -1 })
+                .skip((page - 1) * limit)
+                .limit(parseInt(limit));
+            
+            res.json({
+                tickets,
+                pagination: {
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    total,
+                    pages: Math.ceil(total / limit)
+                }
+            });
+        } else {
+            // Fallback storage operations
+            let filteredTickets = [...fallbackStorage.tickets];
+            
+            if (status) {
+                filteredTickets = filteredTickets.filter(ticket => ticket.status === status);
+            }
+            
+            if (category) {
+                filteredTickets = filteredTickets.filter(ticket => 
+                    ticket.issue_category.toLowerCase().includes(category.toLowerCase())
+                );
+            }
+            
+            if (urgency) {
+                filteredTickets = filteredTickets.filter(ticket => ticket.urgency === urgency);
+            }
+            
+            if (userId) {
+                filteredTickets = filteredTickets.filter(ticket => ticket.creator_id === userId);
+            }
+            
+            // Sort by creation time (newest first)
+            filteredTickets.sort((a, b) => new Date(b.opening_time) - new Date(a.opening_time));
+            
+            // Pagination
+            const pageNum = parseInt(page);
+            const limitNum = parseInt(limit);
+            const startIndex = (pageNum - 1) * limitNum;
+            const endIndex = startIndex + limitNum;
+            const paginatedTickets = filteredTickets.slice(startIndex, endIndex);
+            
+            res.json({
+                tickets: paginatedTickets,
+                pagination: {
+                    page: pageNum,
+                    limit: limitNum,
+                    total: filteredTickets.length,
+                    pages: Math.ceil(filteredTickets.length / limitNum)
+                }
+            });
+        }
     } catch (error) {
         console.error('Get tickets error:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -600,60 +644,102 @@ app.post('/api/tickets', authenticateUser, upload.single('image'), async (req, r
             });
         }
         
-        // Find a default authority - in a real app, this would be based on location
-        let authority = await Authority.findOne();
-        if (!authority) {
-            // Create a default authority if none exists
-            authority = new Authority({
-                name: 'Default Municipal Authority',
-                email: 'admin@authority.gov',
-                password: 'defaultpassword',
+        if (isConnectedToDB) {
+            // MongoDB operations
+            // Find a default authority - in a real app, this would be based on location
+            let authority = await Authority.findOne();
+            if (!authority) {
+                // Create a default authority if none exists
+                authority = new Authority({
+                    name: 'Default Municipal Authority',
+                    email: 'admin@authority.gov',
+                    password: 'defaultpassword',
+                    location: {
+                        coordinates: { lat: 0, lng: 0 },
+                        address: 'Default Location'
+                    }
+                });
+                await authority.save();
+            }
+            
+            const newTicket = new Ticket({
+                creator_id: req.user._id,
+                creator_name: req.user.name,
+                status: 'open',
+                issue_name,
+                issue_category,
+                issue_description,
+                image_url: req.file ? `/uploads/${req.file.filename}` : null,
+                tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
+                votes: { upvotes: 0, downvotes: 0 },
+                urgency,
                 location: {
-                    coordinates: { lat: 0, lng: 0 },
-                    address: 'Default Location'
-                }
-            });
-            await authority.save();
-        }
-        
-        const newTicket = new Ticket({
-            creator_id: req.user._id,
-            creator_name: req.user.name,
-            status: 'open',
-            issue_name,
-            issue_category,
-            issue_description,
-            image_url: req.file ? `/uploads/${req.file.filename}` : null,
-            tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
-            votes: { upvotes: 0, downvotes: 0 },
-            urgency,
-            location: {
-                coordinates: { 
-                    lat: parseFloat(location_lat) || 0, 
-                    lng: parseFloat(location_lng) || 0 
+                    coordinates: { 
+                        lat: parseFloat(location_lat) || 0, 
+                        lng: parseFloat(location_lng) || 0 
+                    },
+                    address: location_address
                 },
-                address: location_address
-            },
-            authority: authority._id,
-            sub_authority: null,
-            assigned_technician: null
-        });
-        
-        await newTicket.save();
-        
-        // Add ticket to user's issues
-        if (req.user.role === 'citizen' || req.user.role === 'technician') {
-            await User.findByIdAndUpdate(req.user._id, {
+                authority: authority._id,
+                sub_authority: null,
+                assigned_technician: null
+            });
+            
+            await newTicket.save();
+            
+            // Add ticket to user's issues
+            if (req.user.role === 'citizen' || req.user.role === 'technician') {
+                await User.findByIdAndUpdate(req.user._id, {
+                    $push: { issues: newTicket._id }
+                });
+            }
+            
+            // Add ticket to authority's issues
+            await Authority.findByIdAndUpdate(authority._id, {
                 $push: { issues: newTicket._id }
             });
+            
+            res.status(201).json(newTicket);
+        } else {
+            // Fallback storage operations
+            const ticketId = `TICK-${Date.now()}`;
+            const newTicket = {
+                _id: ticketId,
+                creator_id: req.user._id,
+                creator_name: req.user.name,
+                status: 'open',
+                issue_name,
+                issue_category,
+                issue_description,
+                image_url: req.file ? `/uploads/${req.file.filename}` : null,
+                tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
+                votes: { upvotes: 0, downvotes: 0 },
+                urgency,
+                location: {
+                    coordinates: { 
+                        lat: parseFloat(location_lat) || 0, 
+                        lng: parseFloat(location_lng) || 0 
+                    },
+                    address: location_address
+                },
+                opening_time: new Date(),
+                closing_time: null,
+                authority: 'auth-001',
+                sub_authority: null,
+                assigned_technician: null
+            };
+            
+            // Add to fallback storage
+            fallbackStorage.tickets.push(newTicket);
+            
+            // Add ticket to user's issues (if user exists in fallback storage)
+            const user = fallbackStorage.users.find(u => u._id === req.user._id);
+            if (user) {
+                user.issues.push(ticketId);
+            }
+            
+            res.status(201).json(newTicket);
         }
-        
-        // Add ticket to authority's issues
-        await Authority.findByIdAndUpdate(authority._id, {
-            $push: { issues: newTicket._id }
-        });
-        
-        res.status(201).json(newTicket);
     } catch (error) {
         console.error('Create ticket error:', error);
         res.status(500).json({ error: 'Internal server error' });
