@@ -35,7 +35,10 @@ connectDB().then((conn) => {
 });
 
 // Initialize fallback data when MongoDB is not available
-
+function initializeFallbackData() {
+    // Keep the fallback storage empty initially - data will be created via API
+    console.log('Fallback storage initialized with empty data');
+}
 
 // Middleware
 app.use(helmet());
@@ -76,6 +79,34 @@ const upload = multer({
         }
     }
 });
+
+// Authentication middleware
+const authenticateToken = async (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+    if (!token) {
+        return res.status(401).json({ error: 'Access token required' });
+    }
+
+    try {
+        // In our simple implementation, token is the user ID
+        const user = await findUserById(token);
+        if (!user) {
+            // Try authorities
+            const authority = await findAuthorityById(token);
+            if (!authority) {
+                return res.status(403).json({ error: 'Invalid token' });
+            }
+            req.user = authority;
+        } else {
+            req.user = user;
+        }
+        next();
+    } catch (error) {
+        return res.status(403).json({ error: 'Invalid token' });
+    }
+};
 
 // Helper functions
 const findUserById = async (id) => {
@@ -272,7 +303,7 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 // User endpoints
-app.get('/api/users/profile', (req, res) => {
+app.get('/api/users/profile', authenticateToken, (req, res) => {
     const user = req.user;
     res.json({
         _id: user._id,
@@ -287,7 +318,7 @@ app.get('/api/users/profile', (req, res) => {
     });
 });
 
-app.put('/api/users/profile', async (req, res) => {
+app.put('/api/users/profile', authenticateToken, async (req, res) => {
     try {
         const { name, contact } = req.body;
         const userId = req.user._id;
@@ -480,7 +511,7 @@ app.get('/api/tickets/:id', async (req, res) => {
     }
 });
 
-app.post('/api/tickets', upload.single('image'), async (req, res) => {
+app.post('/api/tickets', upload.single('image'), authenticateToken, async (req, res) => {
     try {
         const {
             issue_name,

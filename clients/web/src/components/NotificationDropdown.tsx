@@ -20,65 +20,18 @@ interface Notification {
   relatedId?: string;
 }
 
-const sampleNotifications: Notification[] = [
-  {
-    id: 'notif-001',
-    type: 'urgent_issue',
-    title: 'Critical Water Pipeline Leakage',
-    message: 'A critical water pipeline issue has been reported in Sector 4 requiring immediate attention.',
-    timestamp: new Date(Date.now() - 15 * 60 * 1000), // 15 minutes ago
-    read: false,
-    priority: 'high',
-    relatedId: 'ticket-001'
-  },
-  {
-    id: 'notif-002',
-    type: 'technician_assigned',
-    title: 'Technician Assigned',
-    message: 'John Smith has been assigned to handle the street light issue in Sector 7.',
-    timestamp: new Date(Date.now() - 45 * 60 * 1000), // 45 minutes ago
-    read: false,
-    priority: 'medium',
-    relatedId: 'ticket-002'
-  },
-  {
-    id: 'notif-003',
-    type: 'issue_resolved',
-    title: 'Issue Resolved',
-    message: 'The pothole issue on Main Road has been successfully resolved.',
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-    read: true,
-    priority: 'medium',
-    relatedId: 'ticket-003'
-  },
-  {
-    id: 'notif-004',
-    type: 'issue_reported',
-    title: 'New Issue Reported',
-    message: 'A new garbage collection issue has been reported in Sector 5.',
-    timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000), // 3 hours ago
-    read: true,
-    priority: 'low',
-    relatedId: 'ticket-004'
-  },
-  {
-    id: 'notif-005',
-    type: 'issue_updated',
-    title: 'Issue Status Updated',
-    message: 'Public toilet maintenance issue status has been updated to "In Process".',
-    timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000), // 6 hours ago
-    read: true,
-    priority: 'low',
-    relatedId: 'ticket-005'
-  }
-];
-
 const NotificationDropdown: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>(sampleNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  // TODO: Replace with API call when notifications endpoint is available
+  useEffect(() => {
+    // For now, initialize with empty notifications since no API endpoint exists
+    setNotifications([]);
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
