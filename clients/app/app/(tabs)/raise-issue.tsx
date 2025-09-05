@@ -6,25 +6,29 @@ import {
   StyleSheet, 
   TouchableOpacity, 
   TextInput, 
-  Alert
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import api from '@/services/api';
 
 export default function RaiseIssueScreen() {
   const colorScheme = useColorScheme();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [description, setDescription] = useState('');
+  const [issueTitle, setIssueTitle] = useState('');
   const [location, setLocation] = useState('Auto-detecting location...');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const availableTags = [
     'Sanitation',
     'Electricity', 
     'Water',
-    'Road',
+    'Roads',
     'Street Lights',
     'Drainage',
     'Traffic',
@@ -62,7 +66,12 @@ export default function RaiseIssueScreen() {
     );
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (!issueTitle.trim()) {
+      Alert.alert('Error', 'Please provide a title for the issue');
+      return;
+    }
+    
     if (!description.trim()) {
       Alert.alert('Error', 'Please provide a description of the issue');
       return;
@@ -73,17 +82,47 @@ export default function RaiseIssueScreen() {
       return;
     }
 
-    Alert.alert(
-      'Issue Submitted',
-      'Your civic issue has been reported successfully! You will be notified of updates.',
-      [{ text: 'OK', onPress: () => {
-        // Reset form
-        setDescription('');
-        setSelectedImage(null);
-        setSelectedTags([]);
-        setLocation('Auto-detecting location...');
-      }}]
-    );
+    setIsSubmitting(true);
+
+    try {
+      // Create FormData for the API request
+      const formData = new FormData();
+      formData.append('issue_name', issueTitle);
+      formData.append('issue_description', description);
+      formData.append('issue_category', selectedTags[0]); // Use first selected tag as category
+      formData.append('urgency', 'moderate'); // Default urgency
+      formData.append('location_address', location === 'Auto-detecting location...' ? 'User Location' : location);
+      formData.append('location_lat', '19.0760'); // Default coordinates - would be GPS in real app
+      formData.append('location_lng', '72.8777');
+      formData.append('tags', selectedTags.join(','));
+
+      // If image is selected, you would add it here
+      // formData.append('image', imageFile);
+
+      await api.tickets.createTicket(formData);
+
+      Alert.alert(
+        'Issue Submitted',
+        'Your civic issue has been reported successfully! You will be notified of updates.',
+        [{ text: 'OK', onPress: () => {
+          // Reset form
+          setIssueTitle('');
+          setDescription('');
+          setSelectedImage(null);
+          setSelectedTags([]);
+          setLocation('Auto-detecting location...');
+        }}]
+      );
+    } catch (error) {
+      console.error('Error submitting issue:', error);
+      Alert.alert(
+        'Submission Failed',
+        'Failed to submit your issue. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const styles = createStyles(colorScheme);
@@ -115,6 +154,18 @@ export default function RaiseIssueScreen() {
               </View>
             )}
           </TouchableOpacity>
+        </View>
+
+        {/* Title Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Issue Title</Text>
+          <TextInput
+            style={styles.titleInput}
+            placeholder="Brief title for the issue..."
+            placeholderTextColor={Colors[colorScheme].tabIconDefault}
+            value={issueTitle}
+            onChangeText={setIssueTitle}
+          />
         </View>
 
         {/* Description Section */}
@@ -179,9 +230,19 @@ export default function RaiseIssueScreen() {
 
         {/* Submit Button */}
         <View style={styles.submitSection}>
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-            <IconSymbol name="paperplane.fill" size={24} color="white" />
-            <Text style={styles.submitButtonText}>Submit Issue</Text>
+          <TouchableOpacity 
+            style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]} 
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <IconSymbol name="paperplane.fill" size={24} color="white" />
+            )}
+            <Text style={styles.submitButtonText}>
+              {isSubmitting ? 'Submitting...' : 'Submit Issue'}
+            </Text>
           </TouchableOpacity>
           
           <Text style={styles.submitNote}>
@@ -273,6 +334,15 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
     color: Colors[colorScheme].tabIconDefault,
     marginTop: 4,
   },
+  titleInput: {
+    borderWidth: 1,
+    borderColor: Colors[colorScheme].tabIconDefault + '30',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: Colors[colorScheme].text,
+    backgroundColor: Colors[colorScheme].background,
+  },
   descriptionInput: {
     borderWidth: 1,
     borderColor: Colors[colorScheme].tabIconDefault + '30',
@@ -361,6 +431,9 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+  },
+  submitButtonDisabled: {
+    backgroundColor: '#6B7280',
   },
   submitButtonText: {
     color: 'white',

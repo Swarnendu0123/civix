@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiEye, FiEdit, FiUsers, FiClock, FiCheckCircle, FiFilter, FiSearch } from 'react-icons/fi';
-import { sampleTechnicians } from '../data/sampleTechnicians';
 import { AddTechnicianModal, ViewTechnicianModal, EditTechnicianModal } from '../components/TechnicianModals';
 import StatCard from '../components/Dashboard/StatCard';
+import api from '../services/api';
 import type { Technician } from '../types';
 
 const TechnicianManagement: React.FC = () => {
-  const [technicians, setTechnicians] = useState<Technician[]>(sampleTechnicians);
+  const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [selectedTechnician, setSelectedTechnician] = useState<Technician | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -14,23 +14,53 @@ const TechnicianManagement: React.FC = () => {
   const [sortBy, setSortBy] = useState<'rating' | 'avgResolutionTime' | 'openTickets'>('rating');
   const [filterBy, setFilterBy] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch technicians from API
+  useEffect(() => {
+    const fetchTechnicians = async () => {
+      try {
+        setLoading(true);
+        const apiTechnicians = await api.technicians.getTechnicians();
+        const uiTechnicians = apiTechnicians.map(api.transformers.apiTechnicianToUI);
+        setTechnicians(uiTechnicians);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching technicians:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load technicians');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTechnicians();
+  }, []);
 
   const totalTechnicians = technicians.length;
   const activeTechnicians = technicians.filter(tech => tech.status === 'active').length;
-  const avgOpenTickets = Math.round(
+  const avgOpenTickets = totalTechnicians > 0 ? Math.round(
     technicians.reduce((sum, tech) => sum + tech.openTickets, 0) / totalTechnicians * 10
-  ) / 10;
+  ) / 10 : 0;
 
   // Handlers for modals
-  const handleAddTechnician = (newTechnician: Omit<Technician, 'id' | 'openTickets' | 'totalResolved' | 'rating'>) => {
-    const technician: Technician = {
-      ...newTechnician,
-      id: `TECH-${Date.now()}`,
-      openTickets: 0,
-      totalResolved: 0,
-      rating: 0
-    };
-    setTechnicians(prev => [...prev, technician]);
+  const handleAddTechnician = async (newTechnician: Omit<Technician, 'id' | 'openTickets' | 'totalResolved' | 'rating'>) => {
+    try {
+      const technicianData = {
+        name: newTechnician.name,
+        email: `${newTechnician.name.toLowerCase().replace(/\s+/g, '.')}@civix.com`,
+        contact: newTechnician.contact,
+        specialization: newTechnician.specialization || 'General',
+        dept: newTechnician.specialization || 'General'
+      };
+      
+      const createdTechnician = await api.technicians.createTechnician(technicianData);
+      const uiTechnician = api.transformers.apiTechnicianToUI(createdTechnician);
+      setTechnicians(prev => [...prev, uiTechnician]);
+    } catch (err) {
+      console.error('Error creating technician:', err);
+      alert('Failed to create technician. Please try again.');
+    }
   };
 
   const handleViewTechnician = (technician: Technician) => {
@@ -43,9 +73,17 @@ const TechnicianManagement: React.FC = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleAssignTicket = (technicianId: string, ticketId: string) => {
-    // In a real app, this would make an API call
-    console.log(`Assigning ticket ${ticketId} to technician ${technicianId}`);
+  const handleAssignTicket = async (technicianId: string, ticketId: string) => {
+    try {
+      await api.tickets.assignTicket(ticketId, technicianId);
+      // Refresh technicians data
+      const apiTechnicians = await api.technicians.getTechnicians();
+      const uiTechnicians = apiTechnicians.map(api.transformers.apiTechnicianToUI);
+      setTechnicians(uiTechnicians);
+    } catch (err) {
+      console.error('Error assigning ticket:', err);
+      alert('Failed to assign ticket. Please try again.');
+    }
   };
 
   // Filtering and sorting logic
@@ -87,6 +125,35 @@ const TechnicianManagement: React.FC = () => {
 
   const specializations = [...new Set(technicians.map(tech => tech.specialization).filter(Boolean))];
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-64 mb-4"></div>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-32 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="flex">
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Error loading technicians</h3>
+              <p className="mt-2 text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
 
   return (

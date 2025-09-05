@@ -1,59 +1,92 @@
-import React from 'react';
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import api from '@/services/api';
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
+  const [user, setUser] = useState({ name: 'John Doe', points: 250 });
+  const [analytics, setAnalytics] = useState({
+    activeTickets: 0,
+    resolvedToday: 0,
+    inProgress: 0
+  });
+  const [recentTickets, setRecentTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Sample user data - in real app would come from auth context
-  const user = {
-    name: 'John Doe',
-    points: 250
-  };
+  useEffect(() => {
+    const fetchHomeData = async () => {
+      try {
+        setLoading(true);
+        
+        // If user is authenticated, fetch real data
+        try {
+          const profileData = await api.user.getProfile();
+          setUser({
+            name: profileData.name,
+            points: profileData.points || 250
+          });
+        } catch (error) {
+          // User not authenticated, use sample data
+          console.log('User not authenticated, using sample data');
+        }
 
-  // Sample analytics data - in real app would come from API
-  const analytics = {
-    activeTickets: 12,
-    resolvedToday: 3,
-    inProgress: 8
-  };
+        // Fetch analytics data
+        try {
+          const analyticsData = await api.analytics.getAnalytics();
+          setAnalytics({
+            activeTickets: analyticsData.activeTickets,
+            resolvedToday: analyticsData.resolvedToday,
+            inProgress: analyticsData.inProgress
+          });
+        } catch (error) {
+          console.log('Analytics not available, using sample data');
+        }
 
-  // Sample recent tickets - in real app would come from API
-  const recentTickets = [
-    {
-      id: 'TICK-001',
-      title: 'Pothole near MMM',
-      location: 'Main Street, Sector 12',
-      timestamp: '2 hours ago',
-      upvotes: 15,
-      distance: '0.5 km',
-      status: 'Urgent',
-      statusColor: 'red'
-    },
-    {
-      id: 'TICK-002',
-      title: 'Street light not working',
-      location: 'Park Avenue, Block A',
-      timestamp: '4 hours ago',
-      upvotes: 8,
-      distance: '1.2 km',
-      status: 'Moderate',
-      statusColor: 'orange'
-    },
-    {
-      id: 'TICK-003',
-      title: 'Water leak',
-      location: 'Green Lane, Colony 3',
-      timestamp: '1 day ago',
-      upvotes: 23,
-      distance: '2.1 km',
-      status: 'Resolved',
-      statusColor: 'green'
-    }
-  ];
+        // Fetch recent tickets
+        try {
+          const ticketsResponse = await api.tickets.getTickets({ limit: 5 });
+          const transformedTickets = ticketsResponse.tickets.map(api.transformers.ticketToMobileFormat);
+          setRecentTickets(transformedTickets);
+        } catch (error) {
+          console.log('Tickets not available, using sample data');
+          // Keep sample data as fallback
+          setRecentTickets([
+            {
+              id: 'TICK-001',
+              title: 'Pothole near MMM',
+              location: 'Main Street, Sector 12',
+              timestamp: '2 hours ago',
+              upvotes: 15,
+              distance: '0.5 km',
+              status: 'Urgent',
+              statusColor: 'red'
+            },
+            {
+              id: 'TICK-002',
+              title: 'Street light not working',
+              location: 'Park Avenue, Block A',
+              timestamp: '4 hours ago',
+              upvotes: 8,
+              distance: '1.2 km',
+              status: 'Moderate',
+              statusColor: 'orange'
+            }
+          ]);
+        }
+      } catch (error) {
+        console.error('Error fetching home data:', error);
+        Alert.alert('Error', 'Failed to load data. Please check your connection.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHomeData();
+  }, []);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -75,6 +108,17 @@ export default function HomeScreen() {
   };
 
   const styles = createStyles(colorScheme);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].tint} />
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -383,5 +427,16 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
     fontSize: 14,
     color: Colors[colorScheme].tabIconDefault,
     textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors[colorScheme].background,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: Colors[colorScheme].text,
   },
 });
