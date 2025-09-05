@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FiAlertCircle, 
   FiCheckCircle, 
@@ -7,22 +7,85 @@ import {
   FiFileText
 } from 'react-icons/fi';
 import StatCard from '../components/Dashboard/StatCard';
-import { sampleIssues } from '../data/sampleIssues';
+import api from '../services/api';
 
 const Dashboard: React.FC = () => {
-  // Calculate stats from sample data
-  const totalIssues = sampleIssues.length;
-  const pendingIssues = sampleIssues.filter(issue => issue.status === 'pending').length;
-  const inProgressIssues = sampleIssues.filter(issue => issue.status === 'in_progress').length;
-  const resolvedIssues = sampleIssues.filter(issue => issue.status === 'resolved').length;
-  
-  // Mock data for charts
-  const recentIssues = sampleIssues.slice(0, 5);
+  const [analytics, setAnalytics] = useState({
+    activeTickets: 0,
+    resolvedToday: 0,
+    inProgress: 0,
+    totalTickets: 0,
+    totalUsers: 0,
+    totalTechnicians: 0
+  });
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch analytics data
+        const analyticsData = await api.analytics.getAnalytics();
+        setAnalytics(analyticsData);
+        
+        // Fetch recent tickets for display
+        const ticketsResponse = await api.tickets.getTickets({ limit: 5 });
+        setTickets(ticketsResponse.tickets || []);
+        
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  // Calculate category stats from tickets
   const categories = ['Water', 'Electricity', 'Roads', 'Sanitation'];
   const categoryStats = categories.map(category => ({
     name: category,
-    count: sampleIssues.filter(issue => issue.category === category).length
+    count: tickets.filter((ticket: any) => 
+      ticket.issue_category?.toLowerCase() === category.toLowerCase()
+    ).length
   }));
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-48 mb-4"></div>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-32 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="flex">
+            <FiAlertCircle className="h-5 w-5 text-red-400" />
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Error loading dashboard</h3>
+              <p className="mt-2 text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -42,28 +105,28 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Issues"
-          value={totalIssues}
+          value={analytics.totalTickets}
           helpText="All reported issues"
           icon={<FiFileText className="h-6 w-6" />}
           trend={{ value: 12, label: "from last month", isPositive: true }}
         />
         <StatCard
-          title="Pending Issues"
-          value={pendingIssues}
-          helpText="Awaiting assignment"
+          title="Active Issues"
+          value={analytics.activeTickets}
+          helpText="Open and in-progress issues"
           icon={<FiAlertCircle className="h-6 w-6" />}
           trend={{ value: -5, label: "from last week", isPositive: false }}
         />
         <StatCard
           title="In Progress"
-          value={inProgressIssues}
+          value={analytics.inProgress}
           helpText="Currently being resolved"
           icon={<FiClock className="h-6 w-6" />}
           trend={{ value: 8, label: "from yesterday", isPositive: true }}
         />
         <StatCard
           title="Resolved Today"
-          value={resolvedIssues}
+          value={analytics.resolvedToday}
           helpText="Completed issues"
           icon={<FiCheckCircle className="h-6 w-6" />}
           trend={{ value: 15, label: "from yesterday", isPositive: true }}
@@ -80,7 +143,7 @@ const Dashboard: React.FC = () => {
             </h3>
             <div className="space-y-4">
               {categoryStats.map((category, index) => {
-                const percentage = totalIssues > 0 ? (category.count / totalIssues) * 100 : 0;
+                const percentage = analytics.totalTickets > 0 ? (category.count / analytics.totalTickets) * 100 : 0;
                 const colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-red-500'];
                 return (
                   <div key={category.name} className="flex items-center">
@@ -110,37 +173,37 @@ const Dashboard: React.FC = () => {
               Recent Issues
             </h3>
             <div className="space-y-4">
-              {recentIssues.map((issue) => (
-                <div key={issue.id} className="flex items-start space-x-3">
+              {tickets.map((ticket: any) => (
+                <div key={ticket._id} className="flex items-start space-x-3">
                   <div className="flex-shrink-0">
                     <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      issue.priority === 'high' 
+                      ticket.urgency === 'critical' 
                         ? 'bg-red-100 text-red-800'
-                        : issue.priority === 'medium'
+                        : ticket.urgency === 'moderate'
                         ? 'bg-yellow-100 text-yellow-800'
                         : 'bg-green-100 text-green-800'
                     }`}>
-                      {issue.priority}
+                      {ticket.urgency}
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
-                      {issue.title}
+                      {ticket.issue_name}
                     </p>
                     <div className="flex items-center mt-1 text-xs text-gray-500">
                       <FiMapPin className="mr-1 h-3 w-3" />
-                      <span className="truncate">{issue.location.address}</span>
+                      <span className="truncate">{ticket.location.address}</span>
                     </div>
                   </div>
                   <div className="flex-shrink-0">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      issue.status === 'resolved'
+                      ticket.status === 'resolved'
                         ? 'bg-green-100 text-green-800'
-                        : issue.status === 'in_progress'
+                        : ticket.status === 'in process'
                         ? 'bg-blue-100 text-blue-800'
                         : 'bg-gray-100 text-gray-800'
                     }`}>
-                      {issue.status.replace('_', ' ')}
+                      {ticket.status.replace('_', ' ')}
                     </span>
                   </div>
                 </div>
