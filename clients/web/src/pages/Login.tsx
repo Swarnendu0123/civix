@@ -22,9 +22,33 @@ const Login: React.FC = () => {
     try {
       await login(formData.email, formData.password);
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Login failed:', error);
-      setError('Invalid credentials');
+      // Handle Firebase-specific error codes
+      let errorMessage = 'Login failed. Please try again.';
+      if (error && typeof error === 'object' && 'code' in error) {
+        const firebaseError = error as { code: string; message?: string };
+        switch (firebaseError.code) {
+          case 'auth/user-not-found':
+            errorMessage = 'No account found with this email address.';
+            break;
+          case 'auth/wrong-password':
+            errorMessage = 'Incorrect password.';
+            break;
+          case 'auth/invalid-email':
+            errorMessage = 'Invalid email address.';
+            break;
+          case 'auth/user-disabled':
+            errorMessage = 'This account has been disabled.';
+            break;
+          case 'auth/too-many-requests':
+            errorMessage = 'Too many failed attempts. Please try again later.';
+            break;
+          default:
+            errorMessage = firebaseError.message || 'Login failed. Please try again.';
+        }
+      }
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -114,10 +138,9 @@ const Login: React.FC = () => {
           </div>
 
           <div className="text-sm text-gray-600">
-            <p>Demo accounts:</p>
-            <p>• admin@civix.com - Admin User</p>
-            <p>• tech@civix.com - Technician</p>
-            <p>• staff@civix.com - Department Staff</p>
+            <p>Note: Firebase authentication is now enabled.</p>
+            <p>You'll need to create user accounts in your Firebase console</p>
+            <p>or use Firebase Auth testing features.</p>
           </div>
         </form>
       </div>
