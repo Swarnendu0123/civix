@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const { v4: uuidv4 } = require('uuid');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -36,134 +35,7 @@ connectDB().then((conn) => {
 });
 
 // Initialize fallback data when MongoDB is not available
-const initializeFallbackData = () => {
-    // Sample users
-    fallbackStorage.users = [
-        {
-            _id: 'user-001',
-            name: 'John Doe',
-            email: 'john@example.com',
-            password: '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // "password"
-            points: 250,
-            issues: ['TICK-001'],
-            role: 'citizen',
-            is_technician: false
-        },
-        {
-            _id: 'user-002',
-            name: 'Jane Smith',
-            email: 'jane@example.com',
-            password: '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // "password"
-            points: 180,
-            issues: ['TICK-002'],
-            role: 'citizen',
-            is_technician: false
-        },
-        {
-            _id: 'TECH-001',
-            name: 'Raj Sharma',
-            email: 'raj@civix.com',
-            password: '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // "password"
-            contact: '+91 98765-43210',
-            specialization: 'Water Supply',
-            dept: 'Water Department',
-            openTickets: 0,
-            avgResolutionTime: '1.5 days',
-            status: 'active',
-            totalResolved: 145,
-            rating: 4.8,
-            issues_assigned: [],
-            pulls_created: [],
-            role: 'technician',
-            is_technician: true
-        },
-        {
-            _id: 'TECH-002',
-            name: 'Priya Patel',
-            email: 'priya@civix.com',
-            password: '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // "password"
-            contact: '+91 98765-43211',
-            specialization: 'Electricity',
-            dept: 'Electrical Department',
-            openTickets: 1,
-            avgResolutionTime: '2.1 days',
-            status: 'active',
-            totalResolved: 98,
-            rating: 4.5,
-            issues_assigned: ['TICK-002'],
-            pulls_created: [],
-            role: 'technician',
-            is_technician: true
-        }
-    ];
 
-    // Sample authorities
-    fallbackStorage.authorities = [
-        {
-            _id: 'auth-001',
-            name: 'Mumbai Municipal Corporation',
-            email: 'admin@mmc.gov.in',
-            password: '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // "password"
-            location: {
-                coordinates: { lat: 19.0760, lng: 72.8777 },
-                address: 'BMC Building, Mumbai'
-            },
-            issues: ['TICK-001', 'TICK-002'],
-            technicians: ['TECH-001', 'TECH-002'],
-            role: 'authority'
-        }
-    ];
-
-    // Sample tickets
-    fallbackStorage.tickets = [
-        {
-            _id: 'TICK-001',
-            creator_id: 'user-001',
-            creator_name: 'John Doe',
-            status: 'open',
-            issue_name: 'Pothole near MMM',
-            issue_category: 'Roads',
-            issue_description: 'Large pothole causing traffic issues on Main Street',
-            image_url: '/uploads/sample-pothole.jpg',
-            tags: ['urgent', 'traffic'],
-            votes: { upvotes: 15, downvotes: 2 },
-            urgency: 'critical',
-            location: {
-                coordinates: { lat: 19.0760, lng: 72.8777 },
-                address: 'Main Street, Sector 12'
-            },
-            opening_time: new Date('2024-01-15T10:30:00Z'),
-            closing_time: null,
-            authority: 'auth-001',
-            sub_authority: null,
-            assigned_technician: null
-        },
-        {
-            _id: 'TICK-002',
-            creator_id: 'user-002',
-            creator_name: 'Jane Smith',
-            status: 'in process',
-            issue_name: 'Street light not working',
-            issue_category: 'Electricity',
-            issue_description: 'Multiple street lights not working in sector 7',
-            image_url: '/uploads/sample-streetlight.jpg',
-            tags: ['safety', 'lighting'],
-            votes: { upvotes: 8, downvotes: 0 },
-            urgency: 'moderate',
-            location: {
-                coordinates: { lat: 19.0820, lng: 72.8800 },
-                address: 'Park Avenue, Block A'
-            },
-            opening_time: new Date('2024-01-14T14:20:00Z'),
-            closing_time: null,
-            authority: 'auth-001',
-            sub_authority: null,
-            assigned_technician: 'TECH-002'
-        }
-    ];
-    
-    console.log('Fallback data initialized with sample users, tickets, and authorities');
-};
 
 // Middleware
 app.use(helmet());
@@ -254,23 +126,6 @@ const findAuthorityById = async (id) => {
     }
 };
 
-// Authentication middleware (simplified - in real app use JWT)
-const authenticateUser = async (req, res, next) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ error: 'Authentication required' });
-    }
-    
-    const userId = authHeader.substring(7); // Remove 'Bearer ' prefix
-    const user = await findUserById(userId) || await findAuthorityById(userId);
-    
-    if (!user) {
-        return res.status(401).json({ error: 'Invalid user' });
-    }
-    
-    req.user = user;
-    next();
-};
 
 // API Routes
 
@@ -417,7 +272,7 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 // User endpoints
-app.get('/api/users/profile', authenticateUser, (req, res) => {
+app.get('/api/users/profile', (req, res) => {
     const user = req.user;
     res.json({
         _id: user._id,
@@ -432,7 +287,7 @@ app.get('/api/users/profile', authenticateUser, (req, res) => {
     });
 });
 
-app.put('/api/users/profile', authenticateUser, async (req, res) => {
+app.put('/api/users/profile', async (req, res) => {
     try {
         const { name, contact } = req.body;
         const userId = req.user._id;
@@ -455,7 +310,7 @@ app.put('/api/users/profile', authenticateUser, async (req, res) => {
 });
 
 // Analytics endpoint
-app.get('/api/analytics', authenticateUser, async (req, res) => {
+app.get('/api/analytics', async (req, res) => {
     try {
         if (isConnectedToDB) {
             const now = new Date();
@@ -625,7 +480,7 @@ app.get('/api/tickets/:id', async (req, res) => {
     }
 });
 
-app.post('/api/tickets', authenticateUser, upload.single('image'), async (req, res) => {
+app.post('/api/tickets', upload.single('image'), async (req, res) => {
     try {
         const {
             issue_name,
@@ -746,7 +601,7 @@ app.post('/api/tickets', authenticateUser, upload.single('image'), async (req, r
     }
 });
 
-app.put('/api/tickets/:id/vote', authenticateUser, async (req, res) => {
+app.put('/api/tickets/:id/vote', async (req, res) => {
     try {
         const { type } = req.body; // 'upvote' or 'downvote'
         const ticket = await findTicketById(req.params.id);
@@ -777,7 +632,7 @@ app.put('/api/tickets/:id/vote', authenticateUser, async (req, res) => {
     }
 });
 
-app.put('/api/tickets/:id/assign', authenticateUser, async (req, res) => {
+app.put('/api/tickets/:id/assign', async (req, res) => {
     try {
         const { technicianId } = req.body;
         const ticket = await findTicketById(req.params.id);
@@ -814,7 +669,7 @@ app.put('/api/tickets/:id/assign', authenticateUser, async (req, res) => {
     }
 });
 
-app.put('/api/tickets/:id/status', authenticateUser, async (req, res) => {
+app.put('/api/tickets/:id/status', async (req, res) => {
     try {
         const { status } = req.body;
         const ticket = await findTicketById(req.params.id);
@@ -904,7 +759,7 @@ app.get('/api/technicians/:id', async (req, res) => {
     }
 });
 
-app.post('/api/technicians', authenticateUser, async (req, res) => {
+app.post('/api/technicians', async (req, res) => {
     try {
         const { name, email, contact, specialization, dept } = req.body;
         
@@ -949,7 +804,7 @@ app.post('/api/technicians', authenticateUser, async (req, res) => {
 });
 
 // Technician task endpoints
-app.get('/api/technicians/:id/tasks', authenticateUser, async (req, res) => {
+app.get('/api/technicians/:id/tasks', async (req, res) => {
     try {
         const { status: taskStatus } = req.query;
         const technicianId = req.params.id;
@@ -974,7 +829,7 @@ app.get('/api/technicians/:id/tasks', authenticateUser, async (req, res) => {
 });
 
 // File upload endpoint
-app.post('/api/upload', authenticateUser, upload.single('file'), (req, res) => {
+app.post('/api/upload', upload.single('file'), (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: 'No file uploaded' });
     }

@@ -1,7 +1,8 @@
 // API service for Civix backend
+import { BACKEND_BASE_URL } from '../config';
 import type { Technician, Issue } from '../types';
 
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = BACKEND_BASE_URL + '/api';
 
 // Simple authentication token storage
 let authToken: string | null = localStorage.getItem('civix_auth_token');
