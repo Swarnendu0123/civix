@@ -1,4 +1,11 @@
-import React, { createContext, useState } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
+import { 
+  signInWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged,
+  type User as FirebaseUser 
+} from 'firebase/auth';
+import { auth } from '../services/firebase';
 
 export type UserRole = 'admin' | 'department_staff' | 'technician';
 
@@ -37,36 +44,50 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export { AuthContext };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Temporarily default to logged-in admin for demo
-  const [user, setUser] = useState<User | null>({
-    id: '1',
-    name: 'Admin User',
-    email: 'admin@civix.com',
-    role: 'admin',
-    permissions: getRolePermissions('admin')
-  });
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        // Map Firebase user to our User interface
+        // For now, we'll assume all authenticated users are admins
+        // In a real implementation, you'd fetch user role from your database
+        const userData: User = {
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName || firebaseUser.email || 'Admin User',
+          email: firebaseUser.email || '',
+          role: 'admin', // Default to admin for this implementation
+          permissions: getRolePermissions('admin')
+        };
+        setUser(userData);
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return unsubscribe;
+  }, []);
 
   const login = async (email: string, password: string) => {
-    // Mock login - replace with actual API call
-    console.log('Login attempt:', email, password);
-    // Mock login - replace with actual API call
-    const role: UserRole = email.includes('admin') ? 'admin' : 
-                          email.includes('tech') ? 'technician' : 'department_staff';
-    
-    const mockUser: User = {
-      id: '1',
-      name: email.includes('admin') ? 'Admin User' : 
-            email.includes('tech') ? 'Tech User' : 'Department Staff',
-      email,
-      role,
-      department: role === 'department_staff' ? 'Water' : undefined,
-      permissions: getRolePermissions(role)
-    };
-    setUser(mockUser);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      // User state will be updated by the onAuthStateChanged listener
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   };
 
-  const logout = () => {
-    setUser(null);
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      // User state will be updated by the onAuthStateChanged listener
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
+    }
   };
 
   const hasPermission = (permission: string) => {
@@ -81,7 +102,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isAuthenticated: !!user,
       hasPermission 
     }}>
-      {children}
+      {loading ? (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading...</p>
+          </div>
+        </div>
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   );
 };
