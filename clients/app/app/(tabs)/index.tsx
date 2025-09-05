@@ -1,75 +1,387 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import React from 'react';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { Colors } from '@/constants/Colors';
+import { IconSymbol } from '@/components/ui/IconSymbol';
 
 export default function HomeScreen() {
+  const colorScheme = useColorScheme();
+
+  // Sample user data - in real app would come from auth context
+  const user = {
+    name: 'John Doe',
+    points: 250
+  };
+
+  // Sample analytics data - in real app would come from API
+  const analytics = {
+    activeTickets: 12,
+    resolvedToday: 3,
+    inProgress: 8
+  };
+
+  // Sample recent tickets - in real app would come from API
+  const recentTickets = [
+    {
+      id: 'TICK-001',
+      title: 'Pothole near MMM',
+      location: 'Main Street, Sector 12',
+      timestamp: '2 hours ago',
+      upvotes: 15,
+      distance: '0.5 km',
+      status: 'Urgent',
+      statusColor: 'red'
+    },
+    {
+      id: 'TICK-002',
+      title: 'Street light not working',
+      location: 'Park Avenue, Block A',
+      timestamp: '4 hours ago',
+      upvotes: 8,
+      distance: '1.2 km',
+      status: 'Moderate',
+      statusColor: 'orange'
+    },
+    {
+      id: 'TICK-003',
+      title: 'Water leak',
+      location: 'Green Lane, Colony 3',
+      timestamp: '1 day ago',
+      upvotes: 23,
+      distance: '2.1 km',
+      status: 'Resolved',
+      statusColor: 'green'
+    }
+  ];
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 18) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
+  const handleReportIssue = () => {
+    Alert.alert('Navigation', 'Would navigate to Raise Issue tab');
+  };
+
+  const handleJoinEvent = () => {
+    Alert.alert('Coming Soon', 'Event functionality will be available soon');
+  };
+
+  const handleMapView = () => {
+    Alert.alert('Navigation', 'Would navigate to Map View tab');
+  };
+
+  const styles = createStyles(colorScheme);
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <Text style={styles.greeting}>{getGreeting()}!</Text>
+          <Text style={styles.userName}>{user.name}</Text>
+        </View>
+        <TouchableOpacity style={styles.notificationButton}>
+          <IconSymbol name="bell.fill" size={24} color={Colors[colorScheme ?? 'light'].tint} />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Analytics Dashboard */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Analytics Dashboard</Text>
+          <View style={styles.analyticsGrid}>
+            <View style={[styles.analyticsCard, { backgroundColor: '#3B82F6' }]}>
+              <Text style={styles.analyticsNumber}>{analytics.activeTickets}</Text>
+              <Text style={styles.analyticsLabel}>Active Tickets</Text>
+            </View>
+            <View style={[styles.analyticsCard, { backgroundColor: '#10B981' }]}>
+              <Text style={styles.analyticsNumber}>{analytics.resolvedToday}</Text>
+              <Text style={styles.analyticsLabel}>Resolved Today</Text>
+            </View>
+            <View style={[styles.analyticsCard, { backgroundColor: '#F59E0B' }]}>
+              <Text style={styles.analyticsNumber}>{analytics.inProgress}</Text>
+              <Text style={styles.analyticsLabel}>In Progress</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Area Overview Map */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Area Overview</Text>
+          <TouchableOpacity style={styles.mapPreview} onPress={handleMapView}>
+            <View style={styles.mapPlaceholder}>
+              <IconSymbol name="map.fill" size={48} color="#6B7280" />
+              <Text style={styles.mapText}>Tap to view map</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* Recent Tickets */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Recent Tickets</Text>
+          {recentTickets.map((ticket) => (
+            <View key={ticket.id} style={styles.ticketCard}>
+              <View style={styles.ticketHeader}>
+                <Text style={styles.ticketTitle}>{ticket.title}</Text>
+                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(ticket.statusColor) }]}>
+                  <Text style={styles.statusText}>{ticket.status}</Text>
+                </View>
+              </View>
+              <Text style={styles.ticketLocation}>{ticket.location}</Text>
+              <View style={styles.ticketFooter}>
+                <Text style={styles.ticketMeta}>{ticket.timestamp} • {ticket.distance}</Text>
+                <View style={styles.upvoteContainer}>
+                  <IconSymbol name="arrow.up" size={16} color="#6B7280" />
+                  <Text style={styles.upvoteText}>{ticket.upvotes}</Text>
+                </View>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        {/* Action Buttons */}
+        <View style={styles.actionSection}>
+          <TouchableOpacity style={styles.primaryButton} onPress={handleReportIssue}>
+            <IconSymbol name="plus.circle.fill" size={24} color="white" />
+            <Text style={styles.primaryButtonText}>Report Issue</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.secondaryButton} onPress={handleJoinEvent}>
+            <IconSymbol name="person.2.fill" size={24} color="#3B82F6" />
+            <Text style={styles.secondaryButtonText}>Join an Event</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Civix Points */}
+        <View style={styles.pointsCard}>
+          <View style={styles.pointsHeader}>
+            <IconSymbol name="star.fill" size={24} color="#F59E0B" />
+            <Text style={styles.pointsTitle}>Civix Points</Text>
+          </View>
+          <Text style={styles.pointsValue}>{user.points}</Text>
+          <Text style={styles.pointsSubtext}>Keep reporting issues to earn more points!</Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  titleContainer: {
+const getStatusColor = (color: string) => {
+  switch (color) {
+    case 'red': return '#EF4444';
+    case 'orange': return '#F59E0B';
+    case 'green': return '#10B981';
+    default: return '#6B7280';
+  }
+};
+
+const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors[colorScheme].background,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: Colors[colorScheme].background,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors[colorScheme].tabIconDefault + '20',
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  greeting: {
+    fontSize: 16,
+    color: Colors[colorScheme].text,
+    fontWeight: '500',
+  },
+  userName: {
+    fontSize: 24,
+    color: Colors[colorScheme].text,
+    fontWeight: 'bold',
+  },
+  notificationButton: {
+    padding: 8,
+  },
+  scrollView: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  section: {
+    marginTop: 24,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: Colors[colorScheme].text,
+    marginBottom: 16,
+  },
+  analyticsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  analyticsCard: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  analyticsNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  analyticsLabel: {
+    fontSize: 12,
+    color: 'white',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  mapPreview: {
+    height: 120,
+    borderRadius: 12,
+    backgroundColor: Colors[colorScheme].background,
+    borderWidth: 1,
+    borderColor: Colors[colorScheme].tabIconDefault + '30',
+  },
+  mapPlaceholder: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mapText: {
+    marginTop: 8,
+    color: Colors[colorScheme].tabIconDefault,
+    fontSize: 16,
+  },
+  ticketCard: {
+    backgroundColor: Colors[colorScheme].background,
+    borderWidth: 1,
+    borderColor: Colors[colorScheme].tabIconDefault + '30',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  ticketHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  ticketTitle: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors[colorScheme].text,
+    marginRight: 12,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusText: {
+    fontSize: 12,
+    color: 'white',
+    fontWeight: '500',
+  },
+  ticketLocation: {
+    fontSize: 14,
+    color: Colors[colorScheme].tabIconDefault,
+    marginBottom: 8,
+  },
+  ticketFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  ticketMeta: {
+    fontSize: 12,
+    color: Colors[colorScheme].tabIconDefault,
+  },
+  upvoteContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  upvoteText: {
+    fontSize: 12,
+    color: Colors[colorScheme].tabIconDefault,
+  },
+  actionSection: {
+    marginTop: 24,
+    gap: 12,
+  },
+  primaryButton: {
+    backgroundColor: '#3B82F6',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  primaryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  secondaryButton: {
+    backgroundColor: Colors[colorScheme].background,
+    borderWidth: 2,
+    borderColor: '#3B82F6',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  secondaryButtonText: {
+    color: '#3B82F6',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  pointsCard: {
+    backgroundColor: Colors[colorScheme].background,
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+    borderRadius: 12,
+    padding: 20,
+    marginTop: 24,
+    marginBottom: 32,
+    alignItems: 'center',
+  },
+  pointsHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
     marginBottom: 8,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  pointsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors[colorScheme].text,
+  },
+  pointsValue: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#F59E0B',
+    marginBottom: 4,
+  },
+  pointsSubtext: {
+    fontSize: 14,
+    color: Colors[colorScheme].tabIconDefault,
+    textAlign: 'center',
   },
 });
