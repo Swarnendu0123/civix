@@ -4,10 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useRouter } from 'expo-router';
 import api from '@/services/api';
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
+  const router = useRouter();
   const [user, setUser] = useState({ name: 'John Doe', points: 250 });
   const [analytics, setAnalytics] = useState({
     activeTickets: 0,
@@ -16,6 +18,7 @@ export default function HomeScreen() {
   });
   const [recentTickets, setRecentTickets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [expandedTicket, setExpandedTicket] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchHomeData = async () => {
@@ -96,15 +99,31 @@ export default function HomeScreen() {
   };
 
   const handleReportIssue = () => {
-    Alert.alert('Navigation', 'Would navigate to Raise Issue tab');
-  };
-
-  const handleJoinEvent = () => {
-    Alert.alert('Coming Soon', 'Event functionality will be available soon');
+    router.push('/raise-issue');
   };
 
   const handleMapView = () => {
-    Alert.alert('Navigation', 'Would navigate to Map View tab');
+    router.push('/map');
+  };
+
+  const handleTicketPress = (ticketId: string) => {
+    setExpandedTicket(expandedTicket === ticketId ? null : ticketId);
+  };
+
+  const handleUpvote = async (ticketId: string) => {
+    try {
+      await api.tickets.voteTicket(ticketId, 'upvote');
+      // Update the ticket's upvotes in the local state
+      setRecentTickets(prev => prev.map(ticket => 
+        ticket.id === ticketId 
+          ? { ...ticket, upvotes: ticket.upvotes + 1 }
+          : ticket
+      ));
+      Alert.alert('Success', 'Your upvote has been recorded!');
+    } catch (error) {
+      console.error('Error upvoting ticket:', error);
+      Alert.alert('Error', 'Failed to upvote. Please try again.');
+    }
   };
 
   const styles = createStyles(colorScheme);
@@ -168,7 +187,14 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Recent Tickets</Text>
           {recentTickets.map((ticket) => (
-            <View key={ticket.id} style={styles.ticketCard}>
+            <TouchableOpacity 
+              key={ticket.id} 
+              style={[
+                styles.ticketCard,
+                expandedTicket === ticket.id && styles.ticketCardExpanded
+              ]}
+              onPress={() => handleTicketPress(ticket.id)}
+            >
               <View style={styles.ticketHeader}>
                 <Text style={styles.ticketTitle}>{ticket.title}</Text>
                 <View style={[styles.statusBadge, { backgroundColor: getStatusColor(ticket.statusColor) }]}>
@@ -183,7 +209,32 @@ export default function HomeScreen() {
                   <Text style={styles.upvoteText}>{ticket.upvotes}</Text>
                 </View>
               </View>
-            </View>
+              
+              {/* Expanded Details */}
+              {expandedTicket === ticket.id && (
+                <View style={styles.expandedDetails}>
+                  <View style={styles.detailsDivider} />
+                  <Text style={styles.detailsTitle}>Issue Details</Text>
+                  <Text style={styles.detailsText}>
+                    Location: {ticket.location}
+                  </Text>
+                  <Text style={styles.detailsText}>
+                    Type: {ticket.status}
+                  </Text>
+                  <Text style={styles.detailsText}>
+                    Upvotes: {ticket.upvotes} community members support this issue
+                  </Text>
+                  
+                  <TouchableOpacity 
+                    style={styles.upvoteButton}
+                    onPress={() => handleUpvote(ticket.id)}
+                  >
+                    <IconSymbol name="arrow.up.circle.fill" size={20} color="white" />
+                    <Text style={styles.upvoteButtonText}>Upvote This Issue</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </TouchableOpacity>
           ))}
         </View>
 
@@ -192,11 +243,6 @@ export default function HomeScreen() {
           <TouchableOpacity style={styles.primaryButton} onPress={handleReportIssue}>
             <IconSymbol name="plus.circle.fill" size={24} color="white" />
             <Text style={styles.primaryButtonText}>Report Issue</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.secondaryButton} onPress={handleJoinEvent}>
-            <IconSymbol name="person.2.fill" size={24} color="#3B82F6" />
-            <Text style={styles.secondaryButtonText}>Join an Event</Text>
           </TouchableOpacity>
         </View>
 
@@ -313,6 +359,10 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
+  },
+  ticketCardExpanded: {
+    borderColor: Colors[colorScheme].tint,
+    borderWidth: 2,
   },
   ticketHeader: {
     flexDirection: 'row',
@@ -438,5 +488,42 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: Colors[colorScheme].text,
+  },
+  expandedDetails: {
+    marginTop: 16,
+    paddingTop: 16,
+  },
+  detailsDivider: {
+    height: 1,
+    backgroundColor: Colors[colorScheme].tabIconDefault + '20',
+    marginBottom: 12,
+  },
+  detailsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors[colorScheme].text,
+    marginBottom: 8,
+  },
+  detailsText: {
+    fontSize: 14,
+    color: Colors[colorScheme].tabIconDefault,
+    marginBottom: 4,
+    lineHeight: 20,
+  },
+  upvoteButton: {
+    backgroundColor: '#10B981',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginTop: 12,
+    gap: 8,
+  },
+  upvoteButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

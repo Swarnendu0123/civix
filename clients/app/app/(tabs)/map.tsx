@@ -4,10 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import api from '@/services/api';
 
 export default function MapScreen() {
   const colorScheme = useColorScheme();
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'urgent' | 'moderate' | 'resolved'>('all');
+  const [expandedMarker, setExpandedMarker] = useState<string | null>(null);
 
   // Sample markers data - in real app would come from API
   const markers = [
@@ -39,14 +41,17 @@ export default function MapScreen() {
   );
 
   const handleMarkerPress = (marker: any) => {
-    Alert.alert(
-      marker.title,
-      `Status: ${marker.status}\nUpvotes: ${marker.upvotes}`,
-      [
-        { text: 'View Details', onPress: () => console.log('View details') },
-        { text: 'Close', style: 'cancel' }
-      ]
-    );
+    setExpandedMarker(expandedMarker === marker.id ? null : marker.id);
+  };
+
+  const handleUpvote = async (markerId: string) => {
+    try {
+      await api.tickets.voteTicket(markerId, 'upvote');
+      Alert.alert('Success', 'Your upvote has been recorded!');
+    } catch (error) {
+      console.error('Error upvoting ticket:', error);
+      Alert.alert('Error', 'Failed to upvote. Please try again.');
+    }
   };
 
   const styles = createStyles(colorScheme);
@@ -95,7 +100,11 @@ export default function MapScreen() {
             {filteredMarkers.map((marker) => (
               <TouchableOpacity
                 key={marker.id}
-                style={[styles.markerCard, { borderLeftColor: getStatusColor(marker.status) }]}
+                style={[
+                  styles.markerCard, 
+                  { borderLeftColor: getStatusColor(marker.status) },
+                  expandedMarker === marker.id && styles.markerCardExpanded
+                ]}
                 onPress={() => handleMarkerPress(marker)}
               >
                 <View style={styles.markerHeader}>
@@ -112,6 +121,31 @@ export default function MapScreen() {
                     <Text style={styles.upvoteText}>{marker.upvotes}</Text>
                   </View>
                 </View>
+                
+                {/* Expanded Details */}
+                {expandedMarker === marker.id && (
+                  <View style={styles.expandedDetails}>
+                    <View style={styles.detailsDivider} />
+                    <Text style={styles.detailsTitle}>Issue Details</Text>
+                    <Text style={styles.detailsText}>
+                      Location: {marker.coordinates.lat.toFixed(4)}, {marker.coordinates.lng.toFixed(4)}
+                    </Text>
+                    <Text style={styles.detailsText}>
+                      Type: {marker.status}
+                    </Text>
+                    <Text style={styles.detailsText}>
+                      Upvotes: {marker.upvotes} community members support this issue
+                    </Text>
+                    
+                    <TouchableOpacity 
+                      style={styles.upvoteButton}
+                      onPress={() => handleUpvote(marker.id)}
+                    >
+                      <IconSymbol name="arrow.up.circle.fill" size={20} color="white" />
+                      <Text style={styles.upvoteButtonText}>Upvote This Issue</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </TouchableOpacity>
             ))}
           </View>
@@ -253,6 +287,11 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
     borderRadius: 8,
     padding: 12,
   },
+  markerCardExpanded: {
+    borderColor: Colors[colorScheme].tint,
+    borderWidth: 2,
+    borderLeftWidth: 4,
+  },
   markerHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -325,5 +364,42 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
   legendText: {
     fontSize: 12,
     color: Colors[colorScheme].tabIconDefault,
+  },
+  expandedDetails: {
+    marginTop: 12,
+    paddingTop: 12,
+  },
+  detailsDivider: {
+    height: 1,
+    backgroundColor: Colors[colorScheme].tabIconDefault + '20',
+    marginBottom: 8,
+  },
+  detailsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors[colorScheme].text,
+    marginBottom: 6,
+  },
+  detailsText: {
+    fontSize: 12,
+    color: Colors[colorScheme].tabIconDefault,
+    marginBottom: 3,
+    lineHeight: 16,
+  },
+  upvoteButton: {
+    backgroundColor: '#10B981',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    marginTop: 8,
+    gap: 6,
+  },
+  upvoteButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
