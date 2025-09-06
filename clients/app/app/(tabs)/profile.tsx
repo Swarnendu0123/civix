@@ -8,34 +8,52 @@ import {
   Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useTheme } from '@/hooks/useTheme';
+import { useAuth } from '@/hooks/useAuth';
 import { Colors } from '@/constants/Colors';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import ThemeToggle from '@/components/ThemeToggle';
 
 export default function ProfileScreen() {
   const { colorScheme } = useTheme();
+  const { isAuthenticated, user, logout } = useAuth();
+  const router = useRouter();
 
-  // Sample user data - in real app would come from auth context
-  const user = {
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '+91 98765-43210',
-    points: 250,
-    joinedDate: '2023-06-15',
+  // Default user data when not authenticated
+  const defaultUser = {
+    name: 'Guest User',
+    email: 'guest@example.com',
+    phone: 'Not provided',
+    points: 0,
+    joinedDate: new Date().toISOString().split('T')[0],
     isTechnician: false,
-    location: 'Sector 12, Gurgaon'
+    location: 'Not specified'
   };
+
+  const currentUser = isAuthenticated && user ? {
+    name: user.name,
+    email: user.email,
+    phone: user.phone || 'Not provided',
+    points: user.points || 0,
+    joinedDate: user.joinedDate || new Date().toISOString().split('T')[0],
+    isTechnician: user.role === 'technician',
+    location: user.location || 'Not specified'
+  } : defaultUser;
 
   // Sample user analytics - in real app would come from API
   const analytics = {
-    ticketsReported: 12,
-    ticketsUpvoted: 45,
-    pointsEarned: 250,
-    badgesEarned: 3
+    ticketsReported: isAuthenticated ? 12 : 0,
+    ticketsUpvoted: isAuthenticated ? 45 : 0,
+    pointsEarned: currentUser.points,
+    badgesEarned: isAuthenticated ? 3 : 0
   };
 
   const handleEditProfile = () => {
+    if (!isAuthenticated) {
+      Alert.alert('Login Required', 'Please login to edit your profile');
+      return;
+    }
     Alert.alert('Edit Profile', 'Would navigate to edit profile screen');
   };
 
@@ -44,14 +62,36 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
+    if (!isAuthenticated) {
+      router.push('/auth/login');
+      return;
+    }
+    
     Alert.alert(
       'Logout',
       'Are you sure you want to logout?',
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Logout', style: 'destructive', onPress: () => {
+          logout();
           Alert.alert('Logged Out', 'You have been logged out successfully');
         }}
+      ]
+    );
+  };
+
+  const handleLogin = () => {
+    router.push('/auth/login');
+  };
+
+  const handleRegister = () => {
+    Alert.alert(
+      'Register',
+      'Choose your account type',
+      [
+        { text: 'Citizen', onPress: () => router.push('/auth/register-user') },
+        { text: 'Technician', onPress: () => router.push('/auth/register-technician') },
+        { text: 'Cancel', style: 'cancel' }
       ]
     );
   };
@@ -90,7 +130,7 @@ export default function ProfileScreen() {
             <View style={styles.avatar}>
               <IconSymbol name="person.fill" size={48} color="white" />
             </View>
-            {user.isTechnician && (
+            {currentUser.isTechnician && (
               <View style={styles.technicianBadge}>
                 <IconSymbol name="wrench.fill" size={16} color="white" />
               </View>
@@ -98,18 +138,18 @@ export default function ProfileScreen() {
           </View>
           
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>{user.name}</Text>
-            {user.isTechnician && (
+            <Text style={styles.userName}>{currentUser.name}</Text>
+            {currentUser.isTechnician && (
               <Text style={styles.technicianLabel}>Technician</Text>
             )}
-            <Text style={styles.userEmail}>{user.email}</Text>
-            <Text style={styles.userPhone}>{user.phone}</Text>
+            <Text style={styles.userEmail}>{currentUser.email}</Text>
+            <Text style={styles.userPhone}>{currentUser.phone}</Text>
             <Text style={styles.userLocation}>
               <IconSymbol name="location" size={14} color={Colors[colorScheme].tabIconDefault} />
-              {' '}{user.location}
+              {' '}{currentUser.location}
             </Text>
             <Text style={styles.joinDate}>
-              Member since {formatJoinDate(user.joinedDate)}
+              Member since {formatJoinDate(currentUser.joinedDate)}
             </Text>
           </View>
         </View>
@@ -120,9 +160,12 @@ export default function ProfileScreen() {
             <IconSymbol name="star.fill" size={24} color="#F59E0B" />
             <Text style={styles.pointsTitle}>Civix Points</Text>
           </View>
-          <Text style={styles.pointsValue}>{user.points}</Text>
+          <Text style={styles.pointsValue}>{currentUser.points}</Text>
           <Text style={styles.pointsSubtext}>
-            Keep reporting and engaging to earn more points!
+            {isAuthenticated 
+              ? 'Keep reporting and engaging to earn more points!'
+              : 'Login to start earning points!'
+            }
           </Text>
         </View>
 
@@ -153,6 +196,27 @@ export default function ProfileScreen() {
         <View style={styles.menuSection}>
           <ThemeToggle />
           
+          {/* Auth Section for non-authenticated users */}
+          {!isAuthenticated && (
+            <>
+              <TouchableOpacity style={styles.menuItem} onPress={handleLogin}>
+                <View style={styles.menuItemLeft}>
+                  <IconSymbol name="person.circle" size={24} color="#10B981" />
+                  <Text style={[styles.menuItemText, { color: '#10B981' }]}>Login</Text>
+                </View>
+                <IconSymbol name="chevron.right" size={20} color={Colors[colorScheme].tabIconDefault} />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.menuItem} onPress={handleRegister}>
+                <View style={styles.menuItemLeft}>
+                  <IconSymbol name="person.badge.plus" size={24} color="#3B82F6" />
+                  <Text style={[styles.menuItemText, { color: '#3B82F6' }]}>Register</Text>
+                </View>
+                <IconSymbol name="chevron.right" size={20} color={Colors[colorScheme].tabIconDefault} />
+              </TouchableOpacity>
+            </>
+          )}
+          
           <TouchableOpacity style={styles.menuItem} onPress={handleSettings}>
             <View style={styles.menuItemLeft}>
               <IconSymbol name="gear" size={24} color={Colors[colorScheme].text} />
@@ -178,11 +242,20 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Logout Button */}
+        {/* Logout/Login Button */}
         <View style={styles.logoutSection}>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <IconSymbol name="arrow.right.square" size={24} color="#EF4444" />
-            <Text style={styles.logoutText}>Logout</Text>
+            <IconSymbol 
+              name={isAuthenticated ? "arrow.right.square" : "arrow.right.circle"} 
+              size={24} 
+              color={isAuthenticated ? "#EF4444" : "#10B981"} 
+            />
+            <Text style={[
+              styles.logoutText, 
+              { color: isAuthenticated ? "#EF4444" : "#10B981" }
+            ]}>
+              {isAuthenticated ? 'Logout' : 'Login'}
+            </Text>
           </TouchableOpacity>
         </View>
 

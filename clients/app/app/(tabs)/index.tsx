@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { IconSymbol } from '@/components/ui/IconSymbol';
@@ -8,6 +9,7 @@ import api from '@/services/api';
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
+  const router = useRouter();
   const [user, setUser] = useState({ name: 'John Doe', points: 250 });
   const [analytics, setAnalytics] = useState({
     activeTickets: 0,
@@ -16,6 +18,7 @@ export default function HomeScreen() {
   });
   const [recentTickets, setRecentTickets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [expandedTicket, setExpandedTicket] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchHomeData = async () => {
@@ -63,7 +66,11 @@ export default function HomeScreen() {
               upvotes: 15,
               distance: '0.5 km',
               status: 'Urgent',
-              statusColor: 'red'
+              statusColor: 'red',
+              description: 'Large pothole causing damage to vehicles. Urgent repair needed.',
+              category: 'Roads',
+              imageUrl: null,
+              canUpvote: true
             },
             {
               id: 'TICK-002',
@@ -73,7 +80,11 @@ export default function HomeScreen() {
               upvotes: 8,
               distance: '1.2 km',
               status: 'Moderate',
-              statusColor: 'orange'
+              statusColor: 'orange',
+              description: 'Street light has been non-functional for 3 days. Safety concern for residents.',
+              category: 'Electricity',
+              imageUrl: null,
+              canUpvote: true
             }
           ]);
         }
@@ -96,15 +107,41 @@ export default function HomeScreen() {
   };
 
   const handleReportIssue = () => {
-    Alert.alert('Navigation', 'Would navigate to Raise Issue tab');
-  };
-
-  const handleJoinEvent = () => {
-    Alert.alert('Coming Soon', 'Event functionality will be available soon');
+    router.push('/raise-issue');
   };
 
   const handleMapView = () => {
-    Alert.alert('Navigation', 'Would navigate to Map View tab');
+    router.push('/map');
+  };
+
+  const handleTicketPress = (ticketId: string) => {
+    setExpandedTicket(expandedTicket === ticketId ? null : ticketId);
+  };
+
+  const handleUpvote = async (ticketId: string) => {
+    try {
+      // Optimistically update the UI
+      setRecentTickets(prev => prev.map(ticket => 
+        ticket.id === ticketId 
+          ? { ...ticket, upvotes: ticket.upvotes + 1, canUpvote: false }
+          : ticket
+      ));
+
+      // Make API call
+      await api.tickets.voteTicket(ticketId, 'upvote');
+      
+      Alert.alert('Success', 'Your upvote has been recorded!');
+    } catch (error) {
+      // Revert optimistic update on error
+      setRecentTickets(prev => prev.map(ticket => 
+        ticket.id === ticketId 
+          ? { ...ticket, upvotes: ticket.upvotes - 1, canUpvote: true }
+          : ticket
+      ));
+      
+      Alert.alert('Error', 'Failed to record your upvote. Please try again.');
+      console.error('Upvote error:', error);
+    }
   };
 
   const styles = createStyles(colorScheme);
@@ -168,7 +205,11 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Recent Tickets</Text>
           {recentTickets.map((ticket) => (
-            <View key={ticket.id} style={styles.ticketCard}>
+            <TouchableOpacity 
+              key={ticket.id} 
+              style={styles.ticketCard} 
+              onPress={() => handleTicketPress(ticket.id)}
+            >
               <View style={styles.ticketHeader}>
                 <Text style={styles.ticketTitle}>{ticket.title}</Text>
                 <View style={[styles.statusBadge, { backgroundColor: getStatusColor(ticket.statusColor) }]}>
@@ -183,7 +224,57 @@ export default function HomeScreen() {
                   <Text style={styles.upvoteText}>{ticket.upvotes}</Text>
                 </View>
               </View>
-            </View>
+              
+              {/* Expanded Details */}
+              {expandedTicket === ticket.id && (
+                <View style={styles.expandedDetails}>
+                  <View style={styles.detailsDivider} />
+                  <View style={styles.detailsSection}>
+                    <Text style={styles.detailsTitle}>Issue Details</Text>
+                    <Text style={styles.detailsDescription}>{ticket.description}</Text>
+                  </View>
+                  
+                  <View style={styles.detailsRow}>
+                    <View style={styles.detailsItem}>
+                      <Text style={styles.detailsLabel}>Category</Text>
+                      <Text style={styles.detailsValue}>{ticket.category}</Text>
+                    </View>
+                    <View style={styles.detailsItem}>
+                      <Text style={styles.detailsLabel}>Priority</Text>
+                      <Text style={styles.detailsValue}>{ticket.status}</Text>
+                    </View>
+                  </View>
+                  
+                  {ticket.imageUrl && (
+                    <View style={styles.detailsSection}>
+                      <Text style={styles.detailsLabel}>Attached Image</Text>
+                      <View style={styles.imagePlaceholder}>
+                        <IconSymbol name="photo.fill" size={32} color="#6B7280" />
+                        <Text style={styles.imagePlaceholderText}>Image would be displayed here</Text>
+                      </View>
+                    </View>
+                  )}
+                  
+                  <View style={styles.actionsContainer}>
+                    <TouchableOpacity 
+                      style={[styles.upvoteButton, !ticket.canUpvote && styles.upvoteButtonDisabled]}
+                      onPress={() => handleUpvote(ticket.id)}
+                      disabled={!ticket.canUpvote}
+                    >
+                      <IconSymbol name="arrow.up" size={20} color={ticket.canUpvote ? "white" : "#6B7280"} />
+                      <Text style={[styles.upvoteButtonText, !ticket.canUpvote && styles.upvoteButtonTextDisabled]}>
+                        {ticket.canUpvote ? 'Upvote' : 'Voted'}
+                      </Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity style={styles.shareButton}>
+                      <IconSymbol name="square.and.arrow.up" size={20} color="#3B82F6" />
+                      <Text style={styles.shareButtonText}>Share</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+            </TouchableOpacity>
           ))}
         </View>
 
@@ -192,11 +283,6 @@ export default function HomeScreen() {
           <TouchableOpacity style={styles.primaryButton} onPress={handleReportIssue}>
             <IconSymbol name="plus.circle.fill" size={24} color="white" />
             <Text style={styles.primaryButtonText}>Report Issue</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.secondaryButton} onPress={handleJoinEvent}>
-            <IconSymbol name="person.2.fill" size={24} color="#3B82F6" />
-            <Text style={styles.secondaryButtonText}>Join an Event</Text>
           </TouchableOpacity>
         </View>
 
@@ -438,5 +524,106 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: Colors[colorScheme].text,
+  },
+  expandedDetails: {
+    marginTop: 16,
+  },
+  detailsDivider: {
+    height: 1,
+    backgroundColor: Colors[colorScheme].tabIconDefault + '20',
+    marginBottom: 16,
+  },
+  detailsSection: {
+    marginBottom: 16,
+  },
+  detailsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors[colorScheme].text,
+    marginBottom: 8,
+  },
+  detailsDescription: {
+    fontSize: 14,
+    color: Colors[colorScheme].text,
+    lineHeight: 20,
+  },
+  detailsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  detailsItem: {
+    flex: 1,
+    marginRight: 12,
+  },
+  detailsLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors[colorScheme].tabIconDefault,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+  },
+  detailsValue: {
+    fontSize: 14,
+    color: Colors[colorScheme].text,
+    fontWeight: '500',
+  },
+  imagePlaceholder: {
+    height: 120,
+    backgroundColor: Colors[colorScheme].tabIconDefault + '10',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  imagePlaceholderText: {
+    fontSize: 12,
+    color: Colors[colorScheme].tabIconDefault,
+    marginTop: 8,
+  },
+  actionsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  upvoteButton: {
+    flex: 1,
+    backgroundColor: '#10B981',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  upvoteButtonDisabled: {
+    backgroundColor: Colors[colorScheme].tabIconDefault + '30',
+  },
+  upvoteButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  upvoteButtonTextDisabled: {
+    color: Colors[colorScheme].tabIconDefault,
+  },
+  shareButton: {
+    flex: 1,
+    backgroundColor: Colors[colorScheme].background,
+    borderWidth: 1,
+    borderColor: '#3B82F6',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  shareButtonText: {
+    color: '#3B82F6',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

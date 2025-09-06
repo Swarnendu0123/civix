@@ -4,10 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import api from '@/services/api';
 
 export default function MapScreen() {
   const colorScheme = useColorScheme();
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'urgent' | 'moderate' | 'resolved'>('all');
+  const [expandedMarker, setExpandedMarker] = useState<string | null>(null);
 
   // Sample markers data - in real app would come from API
   const markers = [
@@ -16,21 +18,39 @@ export default function MapScreen() {
       title: 'Pothole near MMM',
       status: 'urgent',
       coordinates: { lat: 28.7041, lng: 77.1025 },
-      upvotes: 15
+      upvotes: 15,
+      description: 'Large pothole causing damage to vehicles. Urgent repair needed.',
+      category: 'Roads',
+      location: 'Main Street, Sector 12',
+      timestamp: '2 hours ago',
+      imageUrl: null,
+      canUpvote: true
     },
     {
       id: 'M002', 
       title: 'Street light not working',
       status: 'moderate',
       coordinates: { lat: 28.7051, lng: 77.1035 },
-      upvotes: 8
+      upvotes: 8,
+      description: 'Street light has been non-functional for 3 days. Safety concern for residents.',
+      category: 'Electricity',
+      location: 'Park Avenue, Block A',
+      timestamp: '4 hours ago',
+      imageUrl: null,
+      canUpvote: true
     },
     {
       id: 'M003',
       title: 'Water leak fixed',
       status: 'resolved',
       coordinates: { lat: 28.7061, lng: 77.1045 },
-      upvotes: 23
+      upvotes: 23,
+      description: 'Water leak has been successfully repaired by municipal team.',
+      category: 'Water',
+      location: 'Central Park, Block B',
+      timestamp: '1 day ago',
+      imageUrl: null,
+      canUpvote: false
     }
   ];
 
@@ -39,14 +59,24 @@ export default function MapScreen() {
   );
 
   const handleMarkerPress = (marker: any) => {
-    Alert.alert(
-      marker.title,
-      `Status: ${marker.status}\nUpvotes: ${marker.upvotes}`,
-      [
-        { text: 'View Details', onPress: () => console.log('View details') },
-        { text: 'Close', style: 'cancel' }
-      ]
-    );
+    setExpandedMarker(expandedMarker === marker.id ? null : marker.id);
+  };
+
+  const handleUpvote = async (markerId: string) => {
+    try {
+      // Find the marker in the list
+      const marker = markers.find(m => m.id === markerId);
+      if (!marker?.canUpvote) return;
+
+      // In a real app, you would update the markers state
+      // For now, just show API call
+      await api.tickets.voteTicket(markerId, 'upvote');
+      
+      Alert.alert('Success', 'Your upvote has been recorded!');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to record your upvote. Please try again.');
+      console.error('Upvote error:', error);
+    }
   };
 
   const styles = createStyles(colorScheme);
@@ -112,6 +142,67 @@ export default function MapScreen() {
                     <Text style={styles.upvoteText}>{marker.upvotes}</Text>
                   </View>
                 </View>
+                
+                {/* Expanded Details */}
+                {expandedMarker === marker.id && (
+                  <View style={styles.expandedDetails}>
+                    <View style={styles.detailsDivider} />
+                    <View style={styles.detailsSection}>
+                      <Text style={styles.detailsTitle}>Issue Details</Text>
+                      <Text style={styles.detailsDescription}>{marker.description}</Text>
+                    </View>
+                    
+                    <View style={styles.detailsRow}>
+                      <View style={styles.detailsItem}>
+                        <Text style={styles.detailsLabel}>Category</Text>
+                        <Text style={styles.detailsValue}>{marker.category}</Text>
+                      </View>
+                      <View style={styles.detailsItem}>
+                        <Text style={styles.detailsLabel}>Location</Text>
+                        <Text style={styles.detailsValue}>{marker.location}</Text>
+                      </View>
+                    </View>
+                    
+                    <View style={styles.detailsRow}>
+                      <View style={styles.detailsItem}>
+                        <Text style={styles.detailsLabel}>Reported</Text>
+                        <Text style={styles.detailsValue}>{marker.timestamp}</Text>
+                      </View>
+                      <View style={styles.detailsItem}>
+                        <Text style={styles.detailsLabel}>Priority</Text>
+                        <Text style={styles.detailsValue}>{marker.status}</Text>
+                      </View>
+                    </View>
+                    
+                    {marker.imageUrl && (
+                      <View style={styles.detailsSection}>
+                        <Text style={styles.detailsLabel}>Attached Image</Text>
+                        <View style={styles.imagePlaceholder}>
+                          <IconSymbol name="photo.fill" size={32} color="#6B7280" />
+                          <Text style={styles.imagePlaceholderText}>Image would be displayed here</Text>
+                        </View>
+                      </View>
+                    )}
+                    
+                    <View style={styles.actionsContainer}>
+                      <TouchableOpacity 
+                        style={[styles.upvoteButton, !marker.canUpvote && styles.upvoteButtonDisabled]}
+                        onPress={() => handleUpvote(marker.id)}
+                        disabled={!marker.canUpvote}
+                      >
+                        <IconSymbol name="arrow.up" size={20} color={marker.canUpvote ? "white" : "#6B7280"} />
+                        <Text style={[styles.upvoteButtonText, !marker.canUpvote && styles.upvoteButtonTextDisabled]}>
+                          {marker.canUpvote ? 'Upvote' : 'Voted'}
+                        </Text>
+                      </TouchableOpacity>
+                      
+                      <TouchableOpacity style={styles.shareButton}>
+                        <IconSymbol name="square.and.arrow.up" size={20} color="#3B82F6" />
+                        <Text style={styles.shareButtonText}>Share</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
               </TouchableOpacity>
             ))}
           </View>
@@ -325,5 +416,106 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
   legendText: {
     fontSize: 12,
     color: Colors[colorScheme].tabIconDefault,
+  },
+  expandedDetails: {
+    marginTop: 16,
+  },
+  detailsDivider: {
+    height: 1,
+    backgroundColor: Colors[colorScheme].tabIconDefault + '20',
+    marginBottom: 16,
+  },
+  detailsSection: {
+    marginBottom: 16,
+  },
+  detailsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors[colorScheme].text,
+    marginBottom: 8,
+  },
+  detailsDescription: {
+    fontSize: 14,
+    color: Colors[colorScheme].text,
+    lineHeight: 20,
+  },
+  detailsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  detailsItem: {
+    flex: 1,
+    marginRight: 12,
+  },
+  detailsLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors[colorScheme].tabIconDefault,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+  },
+  detailsValue: {
+    fontSize: 14,
+    color: Colors[colorScheme].text,
+    fontWeight: '500',
+  },
+  imagePlaceholder: {
+    height: 120,
+    backgroundColor: Colors[colorScheme].tabIconDefault + '10',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  imagePlaceholderText: {
+    fontSize: 12,
+    color: Colors[colorScheme].tabIconDefault,
+    marginTop: 8,
+  },
+  actionsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  upvoteButton: {
+    flex: 1,
+    backgroundColor: '#10B981',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  upvoteButtonDisabled: {
+    backgroundColor: Colors[colorScheme].tabIconDefault + '30',
+  },
+  upvoteButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  upvoteButtonTextDisabled: {
+    color: Colors[colorScheme].tabIconDefault,
+  },
+  shareButton: {
+    flex: 1,
+    backgroundColor: Colors[colorScheme].background,
+    borderWidth: 1,
+    borderColor: '#3B82F6',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  shareButtonText: {
+    color: '#3B82F6',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
