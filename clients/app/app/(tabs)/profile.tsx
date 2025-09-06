@@ -9,31 +9,16 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
+import { useAuth } from '@/hooks/useAuth';
 import { Colors } from '@/constants/Colors';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useRouter } from 'expo-router';
 import ThemeToggle from '@/components/ThemeToggle';
 
 export default function ProfileScreen() {
   const { colorScheme } = useTheme();
-
-  // Sample user data - in real app would come from auth context
-  const user = {
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '+91 98765-43210',
-    points: 250,
-    joinedDate: '2023-06-15',
-    isTechnician: false,
-    location: 'Sector 12, Gurgaon'
-  };
-
-  // Sample user analytics - in real app would come from API
-  const analytics = {
-    ticketsReported: 12,
-    ticketsUpvoted: 45,
-    pointsEarned: 250,
-    badgesEarned: 3
-  };
+  const { user, logout } = useAuth();
+  const router = useRouter();
 
   const handleEditProfile = () => {
     Alert.alert('Edit Profile', 'Would navigate to edit profile screen');
@@ -50,6 +35,7 @@ export default function ProfileScreen() {
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Logout', style: 'destructive', onPress: () => {
+          logout();
           Alert.alert('Logged Out', 'You have been logged out successfully');
         }}
       ]
@@ -64,11 +50,34 @@ export default function ProfileScreen() {
     Alert.alert('About Civix', 'Civix v1.0.0\nMaking communities better together');
   };
 
+  const handleTestAuth = () => {
+    router.push('/auth/login');
+  };
+
   const formatJoinDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long'
     });
+  };
+
+  // Sample user analytics - in real app would come from API
+  const analytics = {
+    ticketsReported: 12,
+    ticketsUpvoted: 45,
+    pointsEarned: user?.points || 250,
+    badgesEarned: 3
+  };
+
+  // Use real user data if available, otherwise fallback to sample data
+  const displayUser = user || {
+    name: 'John Doe',
+    email: 'john.doe@example.com',
+    phone: '+91 98765-43210',
+    points: 250,
+    joinedDate: '2023-06-15',
+    role: 'citizen',
+    location: 'Sector 12, Gurgaon'
   };
 
   const styles = createStyles(colorScheme);
@@ -90,7 +99,7 @@ export default function ProfileScreen() {
             <View style={styles.avatar}>
               <IconSymbol name="person.fill" size={48} color="white" />
             </View>
-            {user.isTechnician && (
+            {displayUser.role === 'technician' && (
               <View style={styles.technicianBadge}>
                 <IconSymbol name="wrench.fill" size={16} color="white" />
               </View>
@@ -98,18 +107,20 @@ export default function ProfileScreen() {
           </View>
           
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>{user.name}</Text>
-            {user.isTechnician && (
-              <Text style={styles.technicianLabel}>Technician</Text>
+            <Text style={styles.userName}>{displayUser.name}</Text>
+            {displayUser.role === 'technician' && (
+              <Text style={styles.technicianLabel}>
+                Technician {displayUser.specialization ? `- ${displayUser.specialization}` : ''}
+              </Text>
             )}
-            <Text style={styles.userEmail}>{user.email}</Text>
-            <Text style={styles.userPhone}>{user.phone}</Text>
+            <Text style={styles.userEmail}>{displayUser.email}</Text>
+            <Text style={styles.userPhone}>{displayUser.phone || '+91 98765-43210'}</Text>
             <Text style={styles.userLocation}>
               <IconSymbol name="location" size={14} color={Colors[colorScheme].tabIconDefault} />
-              {' '}{user.location}
+              {' '}{displayUser.location || 'Sector 12, Gurgaon'}
             </Text>
             <Text style={styles.joinDate}>
-              Member since {formatJoinDate(user.joinedDate)}
+              Member since {formatJoinDate(displayUser.joinedDate || '2023-06-15')}
             </Text>
           </View>
         </View>
@@ -120,7 +131,7 @@ export default function ProfileScreen() {
             <IconSymbol name="star.fill" size={24} color="#F59E0B" />
             <Text style={styles.pointsTitle}>Civix Points</Text>
           </View>
-          <Text style={styles.pointsValue}>{user.points}</Text>
+          <Text style={styles.pointsValue}>{displayUser.points}</Text>
           <Text style={styles.pointsSubtext}>
             Keep reporting and engaging to earn more points!
           </Text>
@@ -151,6 +162,14 @@ export default function ProfileScreen() {
 
         {/* Menu Options */}
         <View style={styles.menuSection}>
+          <TouchableOpacity style={styles.menuItem} onPress={handleTestAuth}>
+            <View style={styles.menuItemLeft}>
+              <IconSymbol name="person.circle" size={24} color="#3B82F6" />
+              <Text style={[styles.menuItemText, { color: '#3B82F6' }]}>Test Authentication</Text>
+            </View>
+            <IconSymbol name="chevron.right" size={20} color={Colors[colorScheme].tabIconDefault} />
+          </TouchableOpacity>
+          
           <ThemeToggle />
           
           <TouchableOpacity style={styles.menuItem} onPress={handleSettings}>
