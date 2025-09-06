@@ -3,82 +3,47 @@ import {
   FiBell, 
   FiX, 
   FiAlertCircle, 
-  FiCheckCircle, 
   FiClock,
-  FiUsers,
-  FiMapPin
+  FiUsers
 } from 'react-icons/fi';
+import api from '../services/api';
 
 interface Notification {
-  id: string;
-  type: 'issue_reported' | 'issue_resolved' | 'issue_updated' | 'technician_assigned' | 'urgent_issue';
+  _id: string;
+  type: 'ticket' | 'user' | 'system';
   title: string;
   message: string;
-  timestamp: Date;
+  data: any;
   read: boolean;
-  priority: 'high' | 'medium' | 'low';
-  relatedId?: string;
+  createdAt: string;
 }
-
-const sampleNotifications: Notification[] = [
-  {
-    id: 'notif-001',
-    type: 'urgent_issue',
-    title: 'Critical Water Pipeline Leakage',
-    message: 'A critical water pipeline issue has been reported in Sector 4 requiring immediate attention.',
-    timestamp: new Date(Date.now() - 15 * 60 * 1000), // 15 minutes ago
-    read: false,
-    priority: 'high',
-    relatedId: 'ticket-001'
-  },
-  {
-    id: 'notif-002',
-    type: 'technician_assigned',
-    title: 'Technician Assigned',
-    message: 'John Smith has been assigned to handle the street light issue in Sector 7.',
-    timestamp: new Date(Date.now() - 45 * 60 * 1000), // 45 minutes ago
-    read: false,
-    priority: 'medium',
-    relatedId: 'ticket-002'
-  },
-  {
-    id: 'notif-003',
-    type: 'issue_resolved',
-    title: 'Issue Resolved',
-    message: 'The pothole issue on Main Road has been successfully resolved.',
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-    read: true,
-    priority: 'medium',
-    relatedId: 'ticket-003'
-  },
-  {
-    id: 'notif-004',
-    type: 'issue_reported',
-    title: 'New Issue Reported',
-    message: 'A new garbage collection issue has been reported in Sector 5.',
-    timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000), // 3 hours ago
-    read: true,
-    priority: 'low',
-    relatedId: 'ticket-004'
-  },
-  {
-    id: 'notif-005',
-    type: 'issue_updated',
-    title: 'Issue Status Updated',
-    message: 'Public toilet maintenance issue status has been updated to "In Process".',
-    timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000), // 6 hours ago
-    read: true,
-    priority: 'low',
-    relatedId: 'ticket-005'
-  }
-];
 
 const NotificationDropdown: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>(sampleNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  // Fetch notifications from API
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        setLoading(true);
+        const response = await api.admin.getNotifications({ limit: 10 });
+        setNotifications(response.notifications || []);
+      } catch (err) {
+        console.error('Error fetching notifications:', err);
+        // Keep notifications as empty array if error
+        setNotifications([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -96,37 +61,21 @@ const NotificationDropdown: React.FC = () => {
 
   const getNotificationIcon = (type: Notification['type']) => {
     switch (type) {
-      case 'urgent_issue':
+      case 'ticket':
         return <FiAlertCircle className="h-5 w-5 text-red-500" />;
-      case 'issue_resolved':
-        return <FiCheckCircle className="h-5 w-5 text-green-500" />;
-      case 'technician_assigned':
+      case 'user':
         return <FiUsers className="h-5 w-5 text-blue-500" />;
-      case 'issue_reported':
-        return <FiMapPin className="h-5 w-5 text-yellow-500" />;
-      case 'issue_updated':
+      case 'system':
         return <FiClock className="h-5 w-5 text-gray-500" />;
       default:
         return <FiBell className="h-5 w-5 text-gray-500" />;
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return 'border-l-red-400';
-      case 'medium':
-        return 'border-l-yellow-400';
-      case 'low':
-        return 'border-l-green-400';
-      default:
-        return 'border-l-gray-400';
-    }
-  };
-
-  const formatTimestamp = (timestamp: Date) => {
+  const formatTimestamp = (timestamp: string) => {
     const now = new Date();
-    const diffMs = now.getTime() - timestamp.getTime();
+    const notifTime = new Date(timestamp);
+    const diffMs = now.getTime() - notifTime.getTime();
     const diffHours = diffMs / (1000 * 60 * 60);
     const diffDays = diffHours / 24;
 
@@ -138,24 +87,39 @@ const NotificationDropdown: React.FC = () => {
     } else if (diffDays < 7) {
       return `${Math.floor(diffDays)}d ago`;
     } else {
-      return timestamp.toLocaleDateString();
+      return notifTime.toLocaleDateString();
     }
   };
 
-  const markAsRead = (id: string) => {
-    setNotifications(prev => 
-      prev.map(n => n.id === id ? { ...n, read: true } : n)
-    );
+  const markAsRead = async (id: string) => {
+    try {
+      await api.admin.markNotificationRead(id);
+      setNotifications(prev => 
+        prev.map(n => n._id === id ? { ...n, read: true } : n)
+      );
+    } catch (err) {
+      console.error('Error marking notification as read:', err);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => 
-      prev.map(n => ({ ...n, read: true }))
-    );
+  const markAllAsRead = async () => {
+    try {
+      // Mark all notifications as read
+      await Promise.all(
+        notifications
+          .filter(n => !n.read)
+          .map(n => api.admin.markNotificationRead(n._id))
+      );
+      setNotifications(prev => 
+        prev.map(n => ({ ...n, read: true }))
+      );
+    } catch (err) {
+      console.error('Error marking all notifications as read:', err);
+    }
   };
 
   const removeNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    setNotifications(prev => prev.filter(n => n._id !== id));
   };
 
   return (
@@ -191,7 +155,12 @@ const NotificationDropdown: React.FC = () => {
 
           {/* Notifications List */}
           <div className="max-h-96 overflow-y-auto">
-            {notifications.length === 0 ? (
+            {loading ? (
+              <div className="px-4 py-6 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="mt-2 text-sm text-gray-500">Loading notifications...</p>
+              </div>
+            ) : notifications.length === 0 ? (
               <div className="px-4 py-6 text-center">
                 <FiBell className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No notifications</h3>
@@ -201,11 +170,11 @@ const NotificationDropdown: React.FC = () => {
               <div className="divide-y divide-gray-200">
                 {notifications.map((notification) => (
                   <div
-                    key={notification.id}
-                    className={`px-4 py-3 hover:bg-gray-50 cursor-pointer border-l-4 ${getPriorityColor(notification.priority)} ${
+                    key={notification._id}
+                    className={`px-4 py-3 hover:bg-gray-50 cursor-pointer border-l-4 border-l-blue-400 ${
                       !notification.read ? 'bg-blue-50' : ''
                     }`}
-                    onClick={() => markAsRead(notification.id)}
+                    onClick={() => markAsRead(notification._id)}
                   >
                     <div className="flex items-start">
                       <div className="flex-shrink-0">
@@ -223,7 +192,7 @@ const NotificationDropdown: React.FC = () => {
                           {notification.message}
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
-                          {formatTimestamp(notification.timestamp)}
+                          {formatTimestamp(notification.createdAt)}
                         </p>
                       </div>
                       <div className="ml-2 flex-shrink-0 flex items-center space-x-2">
@@ -233,7 +202,7 @@ const NotificationDropdown: React.FC = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            removeNotification(notification.id);
+                            removeNotification(notification._id);
                           }}
                           className="text-gray-400 hover:text-gray-600"
                         >

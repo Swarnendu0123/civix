@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   FiSearch, 
   FiMapPin, 
@@ -8,7 +8,7 @@ import {
   FiFilter,
   FiEye
 } from 'react-icons/fi';
-import { sampleTickets } from '../data/sampleTickets';
+import api from '../services/api';
 import type { Ticket } from '../types';
 
 interface IssuesTableProps {
@@ -22,9 +22,31 @@ const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
   const [urgencyFilter, setUrgencyFilter] = useState('all');
   const [sortBy, setSortBy] = useState<'opening_time' | 'votes' | 'urgency'>('opening_time');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch tickets from API
+  useEffect(() => {
+    const fetchTickets = async () => {
+      try {
+        setLoading(true);
+        const response = await api.tickets.getTickets({ limit: 100 }); // Get more tickets for filtering
+        setTickets(response.tickets || []);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching tickets:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load tickets');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTickets();
+  }, []);
 
   const filteredAndSortedTickets = useMemo(() => {
-    return sampleTickets
+    return tickets
       .filter(ticket => {
         if (statusFilter !== 'all' && ticket.status !== statusFilter) return false;
         if (categoryFilter !== 'all' && ticket.issue_category !== categoryFilter) return false;
@@ -60,7 +82,7 @@ const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
         }
         return sortOrder === 'desc' ? -comparison : comparison;
       });
-  }, [searchQuery, statusFilter, categoryFilter, urgencyFilter, sortBy, sortOrder]);
+  }, [tickets, searchQuery, statusFilter, categoryFilter, urgencyFilter, sortBy, sortOrder]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -88,7 +110,7 @@ const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
     }
   };
 
-  const categories = [...new Set(sampleTickets.map(ticket => ticket.issue_category))];
+  const categories = [...new Set(tickets.map(ticket => ticket.issue_category))];
 
   const handleSort = (column: 'opening_time' | 'votes' | 'urgency') => {
     if (sortBy === column) {
@@ -98,6 +120,27 @@ const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
       setSortOrder('desc');
     }
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-12">
+          <div className="text-red-500 text-lg mb-2">Error loading issues</div>
+          <div className="text-gray-600">{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

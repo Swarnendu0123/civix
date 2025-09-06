@@ -35,7 +35,10 @@ connectDB().then((conn) => {
 });
 
 // Initialize fallback data when MongoDB is not available
-
+function initializeFallbackData() {
+    // Keep the fallback storage empty initially - data will be created via API
+    console.log('Fallback storage initialized with empty data');
+}
 
 // Middleware
 app.use(helmet());
@@ -76,6 +79,34 @@ const upload = multer({
         }
     }
 });
+
+// Authentication middleware
+const authenticateToken = async (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+    if (!token) {
+        return res.status(401).json({ error: 'Access token required' });
+    }
+
+    try {
+        // In our simple implementation, token is the user ID
+        const user = await findUserById(token);
+        if (!user) {
+            // Try authorities
+            const authority = await findAuthorityById(token);
+            if (!authority) {
+                return res.status(403).json({ error: 'Invalid token' });
+            }
+            req.user = authority;
+        } else {
+            req.user = user;
+        }
+        next();
+    } catch (error) {
+        return res.status(403).json({ error: 'Invalid token' });
+    }
+};
 
 // Helper functions
 const findUserById = async (id) => {
@@ -272,7 +303,7 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 // User endpoints
-app.get('/api/users/profile', (req, res) => {
+app.get('/api/users/profile', authenticateToken, (req, res) => {
     const user = req.user;
     res.json({
         _id: user._id,
@@ -287,7 +318,7 @@ app.get('/api/users/profile', (req, res) => {
     });
 });
 
-app.put('/api/users/profile', async (req, res) => {
+app.put('/api/users/profile', authenticateToken, async (req, res) => {
     try {
         const { name, contact } = req.body;
         const userId = req.user._id;
@@ -480,7 +511,7 @@ app.get('/api/tickets/:id', async (req, res) => {
     }
 });
 
-app.post('/api/tickets', upload.single('image'), async (req, res) => {
+app.post('/api/tickets', upload.single('image'), authenticateToken, async (req, res) => {
     try {
         const {
             issue_name,
@@ -715,21 +746,45 @@ app.get('/api/technicians', async (req, res) => {
     try {
         const { specialization, status, department } = req.query;
         
-        const filter = { role: 'technician' };
+        let technicians = [];
         
-        if (specialization) {
-            filter.specialization = { $regex: specialization, $options: 'i' };
+        if (isConnectedToDB) {
+            const filter = { role: 'technician' };
+            
+            if (specialization) {
+                filter.specialization = { $regex: specialization, $options: 'i' };
+            }
+            
+            if (status) {
+                filter.status = status;
+            }
+            
+            if (department) {
+                filter.dept = { $regex: department, $options: 'i' };
+            }
+            
+            technicians = await User.find(filter);
+        } else {
+            // Fallback storage operations
+            technicians = fallbackStorage.users.filter(user => user.role === 'technician');
+            
+            if (specialization) {
+                technicians = technicians.filter(tech => 
+                    tech.specialization && tech.specialization.toLowerCase().includes(specialization.toLowerCase())
+                );
+            }
+            
+            if (status) {
+                technicians = technicians.filter(tech => tech.status === status);
+            }
+            
+            if (department) {
+                technicians = technicians.filter(tech => 
+                    tech.dept && tech.dept.toLowerCase().includes(department.toLowerCase())
+                );
+            }
         }
         
-        if (status) {
-            filter.status = status;
-        }
-        
-        if (department) {
-            filter.dept = { $regex: department, $options: 'i' };
-        }
-        
-        const technicians = await User.find(filter);
         res.json(technicians);
     } catch (error) {
         console.error('Get technicians error:', error);
@@ -759,7 +814,7 @@ app.get('/api/technicians/:id', async (req, res) => {
     }
 });
 
-app.post('/api/technicians', async (req, res) => {
+app.post('/api/technicians', authenticateToken, async (req, res) => {
     try {
         const { name, email, contact, specialization, dept } = req.body;
         
@@ -769,36 +824,147 @@ app.post('/api/technicians', async (req, res) => {
             });
         }
         
-        // Check if user already exists
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            return res.status(409).json({ error: 'User with this email already exists' });
+        if (isConnectedToDB) {
+            // Check if user already exists
+            const existingUser = await User.findOne({ email });
+            if (existingUser) {
+                return res.status(409).json({ error: 'User with this email already exists' });
+            }
+            
+            const newTechnician = new User({
+                name,
+                email,
+                password: 'defaultpassword123', // In real app, generate secure password
+                contact,
+                specialization,
+                dept: dept || 'General',
+                openTickets: 0,
+                avgResolutionTime: '0 days',
+                status: 'active',
+                totalResolved: 0,
+                rating: 0,
+                issues_assigned: [],
+                pulls_created: [],
+                role: 'technician'
+            });
+            
+            await newTechnician.save();
+            res.status(201).json(newTechnician);
+        } else {
+            // Fallback storage operations
+            const existingUser = fallbackStorage.users.find(u => u.email === email);
+            if (existingUser) {
+                return res.status(409).json({ error: 'User with this email already exists' });
+            }
+            
+            const newTechnician = {
+                _id: require('uuid').v4(),
+                name,
+                email,
+                password: 'defaultpassword123',
+                contact,
+                specialization,
+                dept: dept || 'General',
+                openTickets: 0,
+                avgResolutionTime: '0 days',
+                status: 'active',
+                totalResolved: 0,
+                rating: 0,
+                issues_assigned: [],
+                pulls_created: [],
+                role: 'technician'
+            };
+            
+            fallbackStorage.users.push(newTechnician);
+            res.status(201).json(newTechnician);
         }
-        
-        const newTechnician = new User({
-            name,
-            email,
-            password: 'defaultpassword123', // In real app, generate secure password
-            contact,
-            specialization,
-            dept: dept || 'General',
-            openTickets: 0,
-            avgResolutionTime: '0 days',
-            status: 'active',
-            totalResolved: 0,
-            rating: 0,
-            issues_assigned: [],
-            pulls_created: [],
-            role: 'technician'
-        });
-        
-        await newTechnician.save();
-        res.status(201).json(newTechnician);
     } catch (error) {
         console.error('Create technician error:', error);
         if (error.code === 11000) {
             return res.status(409).json({ error: 'User with this email already exists' });
         }
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.put('/api/technicians/:id', authenticateToken, async (req, res) => {
+    try {
+        const { name, contact, specialization, dept, status } = req.body;
+        const technicianId = req.params.id;
+        
+        // Only allow authority to update technicians
+        if (req.user.role !== 'authority') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        const updateData = {};
+        if (name) updateData.name = name;
+        if (contact) updateData.contact = contact;
+        if (specialization) updateData.specialization = specialization;
+        if (dept) updateData.dept = dept;
+        if (status) updateData.status = status;
+        
+        if (isConnectedToDB) {
+            const updatedTechnician = await User.findByIdAndUpdate(
+                technicianId,
+                updateData,
+                { new: true }
+            );
+            
+            if (!updatedTechnician) {
+                return res.status(404).json({ error: 'Technician not found' });
+            }
+            
+            res.json(updatedTechnician);
+        } else {
+            const technicianIndex = fallbackStorage.users.findIndex(
+                user => user._id === technicianId && user.role === 'technician'
+            );
+            
+            if (technicianIndex === -1) {
+                return res.status(404).json({ error: 'Technician not found' });
+            }
+            
+            Object.assign(fallbackStorage.users[technicianIndex], updateData);
+            res.json(fallbackStorage.users[technicianIndex]);
+        }
+    } catch (error) {
+        console.error('Update technician error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.delete('/api/technicians/:id', authenticateToken, async (req, res) => {
+    try {
+        const technicianId = req.params.id;
+        
+        // Only allow authority to delete technicians
+        if (req.user.role !== 'authority') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        if (isConnectedToDB) {
+            const deletedTechnician = await User.findByIdAndDelete(technicianId);
+            
+            if (!deletedTechnician) {
+                return res.status(404).json({ error: 'Technician not found' });
+            }
+            
+            res.json({ message: 'Technician deleted successfully' });
+        } else {
+            const technicianIndex = fallbackStorage.users.findIndex(
+                user => user._id === technicianId && user.role === 'technician'
+            );
+            
+            if (technicianIndex === -1) {
+                return res.status(404).json({ error: 'Technician not found' });
+            }
+            
+            fallbackStorage.users.splice(technicianIndex, 1);
+            res.json({ message: 'Technician deleted successfully' });
+        }
+    } catch (error) {
+        console.error('Delete technician error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -824,6 +990,620 @@ app.get('/api/technicians/:id/tasks', async (req, res) => {
         res.json(tasks);
     } catch (error) {
         console.error('Get technician tasks error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// ============= ADMIN APIs =============
+
+// User Management APIs (Admin only)
+app.get('/api/admin/users', authenticateToken, async (req, res) => {
+    try {
+        // Only allow authority to access user management
+        if (req.user.role !== 'authority') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        const { page = 1, limit = 20, role, status, search } = req.query;
+        
+        if (isConnectedToDB) {
+            const filter = {};
+            
+            if (role && role !== 'all') {
+                filter.role = role;
+            }
+            
+            if (status && status !== 'all') {
+                filter.status = status;
+            }
+            
+            if (search) {
+                filter.$or = [
+                    { name: { $regex: search, $options: 'i' } },
+                    { email: { $regex: search, $options: 'i' } }
+                ];
+            }
+            
+            const total = await User.countDocuments(filter);
+            const users = await User.find(filter)
+                .select('-password') // Exclude password from response
+                .sort({ createdAt: -1 })
+                .skip((page - 1) * limit)
+                .limit(parseInt(limit));
+            
+            res.json({
+                users,
+                pagination: {
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    total,
+                    pages: Math.ceil(total / limit)
+                }
+            });
+        } else {
+            let filteredUsers = [...fallbackStorage.users];
+            
+            if (role && role !== 'all') {
+                filteredUsers = filteredUsers.filter(user => user.role === role);
+            }
+            
+            if (status && status !== 'all') {
+                filteredUsers = filteredUsers.filter(user => user.status === status);
+            }
+            
+            if (search) {
+                filteredUsers = filteredUsers.filter(user => 
+                    user.name.toLowerCase().includes(search.toLowerCase()) ||
+                    user.email.toLowerCase().includes(search.toLowerCase())
+                );
+            }
+            
+            // Remove password from response
+            const sanitizedUsers = filteredUsers.map(({ password, ...user }) => user);
+            
+            const pageNum = parseInt(page);
+            const limitNum = parseInt(limit);
+            const startIndex = (pageNum - 1) * limitNum;
+            const endIndex = startIndex + limitNum;
+            const paginatedUsers = sanitizedUsers.slice(startIndex, endIndex);
+            
+            res.json({
+                users: paginatedUsers,
+                pagination: {
+                    page: pageNum,
+                    limit: limitNum,
+                    total: sanitizedUsers.length,
+                    pages: Math.ceil(sanitizedUsers.length / limitNum)
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Get users error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.put('/api/admin/users/:id/status', authenticateToken, async (req, res) => {
+    try {
+        // Only allow authority to manage user status
+        if (req.user.role !== 'authority') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        const { status } = req.body;
+        const userId = req.params.id;
+        
+        const validStatuses = ['active', 'inactive', 'suspended'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ error: 'Invalid status' });
+        }
+        
+        if (isConnectedToDB) {
+            const updatedUser = await User.findByIdAndUpdate(
+                userId,
+                { status },
+                { new: true }
+            ).select('-password');
+            
+            if (!updatedUser) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+            
+            res.json(updatedUser);
+        } else {
+            const userIndex = fallbackStorage.users.findIndex(user => user._id === userId);
+            
+            if (userIndex === -1) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+            
+            fallbackStorage.users[userIndex].status = status;
+            const { password, ...sanitizedUser } = fallbackStorage.users[userIndex];
+            res.json(sanitizedUser);
+        }
+    } catch (error) {
+        console.error('Update user status error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.delete('/api/admin/users/:id', authenticateToken, async (req, res) => {
+    try {
+        // Only allow authority to delete users
+        if (req.user.role !== 'authority') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        const userId = req.params.id;
+        
+        if (isConnectedToDB) {
+            const deletedUser = await User.findByIdAndDelete(userId);
+            
+            if (!deletedUser) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+            
+            res.json({ message: 'User deleted successfully' });
+        } else {
+            const userIndex = fallbackStorage.users.findIndex(user => user._id === userId);
+            
+            if (userIndex === -1) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+            
+            fallbackStorage.users.splice(userIndex, 1);
+            res.json({ message: 'User deleted successfully' });
+        }
+    } catch (error) {
+        console.error('Delete user error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Notifications Management APIs
+app.get('/api/admin/notifications', authenticateToken, async (req, res) => {
+    try {
+        // Only allow authority to access notifications
+        if (req.user.role !== 'authority') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        const { page = 1, limit = 20, read } = req.query;
+        
+        // For now, generate sample notifications based on recent system activity
+        if (isConnectedToDB) {
+            const recentTickets = await Ticket.find()
+                .sort({ opening_time: -1 })
+                .limit(10);
+            
+            const recentUsers = await User.find()
+                .sort({ createdAt: -1 })
+                .limit(5);
+            
+            const notifications = [
+                ...recentTickets.map(ticket => ({
+                    _id: `notif-ticket-${ticket._id}`,
+                    type: 'ticket',
+                    title: `New ${ticket.urgency} issue reported`,
+                    message: `${ticket.issue_name} in ${ticket.location.address}`,
+                    data: { ticketId: ticket._id },
+                    read: false,
+                    createdAt: ticket.opening_time
+                })),
+                ...recentUsers.map(user => ({
+                    _id: `notif-user-${user._id}`,
+                    type: 'user',
+                    title: 'New user registered',
+                    message: `${user.name} (${user.email}) joined as ${user.role}`,
+                    data: { userId: user._id },
+                    read: false,
+                    createdAt: user.createdAt || new Date()
+                }))
+            ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            
+            res.json({
+                notifications,
+                pagination: {
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    total: notifications.length,
+                    pages: Math.ceil(notifications.length / limit)
+                }
+            });
+        } else {
+            // Fallback storage notifications
+            const notifications = [
+                {
+                    _id: 'notif-1',
+                    type: 'system',
+                    title: 'System Status',
+                    message: 'Using in-memory storage. Connect MongoDB for persistent data.',
+                    data: {},
+                    read: false,
+                    createdAt: new Date()
+                },
+                ...fallbackStorage.tickets.slice(0, 5).map(ticket => ({
+                    _id: `notif-ticket-${ticket._id}`,
+                    type: 'ticket',
+                    title: `New ${ticket.urgency || 'moderate'} issue reported`,
+                    message: `${ticket.issue_name} in ${ticket.location.address}`,
+                    data: { ticketId: ticket._id },
+                    read: false,
+                    createdAt: ticket.opening_time
+                }))
+            ];
+            
+            res.json({
+                notifications,
+                pagination: {
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    total: notifications.length,
+                    pages: Math.ceil(notifications.length / limit)
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Get notifications error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.put('/api/admin/notifications/:id/read', authenticateToken, async (req, res) => {
+    try {
+        // Only allow authority to mark notifications as read
+        if (req.user.role !== 'authority') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        const notificationId = req.params.id;
+        
+        // In a real implementation, this would update a notifications collection
+        // For now, just return success
+        res.json({ message: 'Notification marked as read' });
+    } catch (error) {
+        console.error('Mark notification read error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Category Management APIs
+app.get('/api/admin/categories', authenticateToken, async (req, res) => {
+    try {
+        // Only allow authority to manage categories
+        if (req.user.role !== 'authority') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        // Default categories for municipal issues
+        const categories = [
+            {
+                _id: 'cat-1',
+                name: 'Water',
+                description: 'Water supply, drainage, and plumbing issues',
+                color: '#3B82F6',
+                active: true,
+                createdAt: new Date('2024-01-01')
+            },
+            {
+                _id: 'cat-2',
+                name: 'Electricity',
+                description: 'Power outages, street lighting, and electrical infrastructure',
+                color: '#EAB308',
+                active: true,
+                createdAt: new Date('2024-01-01')
+            },
+            {
+                _id: 'cat-3',
+                name: 'Roads',
+                description: 'Road maintenance, potholes, and traffic infrastructure',
+                color: '#6B7280',
+                active: true,
+                createdAt: new Date('2024-01-01')
+            },
+            {
+                _id: 'cat-4',
+                name: 'Sanitation',
+                description: 'Waste management, cleaning, and public hygiene',
+                color: '#10B981',
+                active: true,
+                createdAt: new Date('2024-01-01')
+            },
+            {
+                _id: 'cat-5',
+                name: 'Public Safety',
+                description: 'Security, emergency services, and public safety',
+                color: '#EF4444',
+                active: true,
+                createdAt: new Date('2024-01-01')
+            },
+            {
+                _id: 'cat-6',
+                name: 'Parks & Recreation',
+                description: 'Public parks, gardens, and recreational facilities',
+                color: '#22C55E',
+                active: true,
+                createdAt: new Date('2024-01-01')
+            }
+        ];
+        
+        res.json({ categories });
+    } catch (error) {
+        console.error('Get categories error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/api/admin/categories', authenticateToken, async (req, res) => {
+    try {
+        // Only allow authority to create categories
+        if (req.user.role !== 'authority') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        const { name, description, color = '#6B7280' } = req.body;
+        
+        if (!name || !description) {
+            return res.status(400).json({ error: 'Name and description are required' });
+        }
+        
+        const newCategory = {
+            _id: `cat-${Date.now()}`,
+            name,
+            description,
+            color,
+            active: true,
+            createdAt: new Date()
+        };
+        
+        res.status(201).json(newCategory);
+    } catch (error) {
+        console.error('Create category error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Advanced Analytics APIs
+app.get('/api/admin/analytics/reports', authenticateToken, async (req, res) => {
+    try {
+        // Only allow authority to access advanced analytics
+        if (req.user.role !== 'authority') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        const { timeframe = '30d', type = 'summary' } = req.query;
+        
+        if (isConnectedToDB) {
+            const now = new Date();
+            let startDate;
+            
+            switch (timeframe) {
+                case '7d':
+                    startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    break;
+                case '30d':
+                    startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    break;
+                case '90d':
+                    startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+                    break;
+                default:
+                    startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            }
+            
+            const tickets = await Ticket.find({
+                opening_time: { $gte: startDate }
+            });
+            
+            const users = await User.countDocuments({
+                createdAt: { $gte: startDate }
+            });
+            
+            // Calculate metrics
+            const totalTickets = tickets.length;
+            const resolvedTickets = tickets.filter(t => t.status === 'resolved').length;
+            const avgResolutionTime = resolvedTickets > 0 ? 
+                tickets
+                    .filter(t => t.status === 'resolved' && t.closing_time)
+                    .reduce((sum, t) => {
+                        const resolutionTime = new Date(t.closing_time) - new Date(t.opening_time);
+                        return sum + (resolutionTime / (1000 * 60 * 60 * 24)); // Convert to days
+                    }, 0) / resolvedTickets : 0;
+            
+            // Category breakdown
+            const categoryBreakdown = tickets.reduce((acc, ticket) => {
+                acc[ticket.issue_category] = (acc[ticket.issue_category] || 0) + 1;
+                return acc;
+            }, {});
+            
+            // Urgency breakdown
+            const urgencyBreakdown = tickets.reduce((acc, ticket) => {
+                acc[ticket.urgency] = (acc[ticket.urgency] || 0) + 1;
+                return acc;
+            }, {});
+            
+            res.json({
+                timeframe,
+                period: {
+                    start: startDate,
+                    end: now
+                },
+                summary: {
+                    totalTickets,
+                    resolvedTickets,
+                    resolutionRate: totalTickets > 0 ? (resolvedTickets / totalTickets) * 100 : 0,
+                    avgResolutionTime: Math.round(avgResolutionTime * 10) / 10,
+                    newUsers: users
+                },
+                breakdown: {
+                    byCategory: categoryBreakdown,
+                    byUrgency: urgencyBreakdown
+                }
+            });
+        } else {
+            // Fallback storage analytics
+            res.json({
+                timeframe,
+                period: {
+                    start: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
+                    end: now
+                },
+                summary: {
+                    totalTickets: fallbackStorage.tickets.length,
+                    resolvedTickets: fallbackStorage.tickets.filter(t => t.status === 'resolved').length,
+                    resolutionRate: fallbackStorage.tickets.length > 0 ? 
+                        (fallbackStorage.tickets.filter(t => t.status === 'resolved').length / fallbackStorage.tickets.length) * 100 : 0,
+                    avgResolutionTime: 2.5,
+                    newUsers: fallbackStorage.users.length
+                },
+                breakdown: {
+                    byCategory: fallbackStorage.tickets.reduce((acc, ticket) => {
+                        acc[ticket.issue_category] = (acc[ticket.issue_category] || 0) + 1;
+                        return acc;
+                    }, {}),
+                    byUrgency: fallbackStorage.tickets.reduce((acc, ticket) => {
+                        acc[ticket.urgency || 'moderate'] = (acc[ticket.urgency || 'moderate'] || 0) + 1;
+                        return acc;
+                    }, {})
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Get reports error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.get('/api/admin/analytics/performance', authenticateToken, async (req, res) => {
+    try {
+        // Only allow authority to access performance analytics
+        if (req.user.role !== 'authority') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        if (isConnectedToDB) {
+            const technicians = await User.find({ role: 'technician' });
+            
+            const performance = await Promise.all(technicians.map(async (tech) => {
+                const assignedTickets = await Ticket.find({ assigned_technician: tech._id });
+                const resolvedTickets = assignedTickets.filter(t => t.status === 'resolved');
+                
+                const avgResolutionTime = resolvedTickets.length > 0 ?
+                    resolvedTickets.reduce((sum, t) => {
+                        if (t.closing_time) {
+                            const resolutionTime = new Date(t.closing_time) - new Date(t.opening_time);
+                            return sum + (resolutionTime / (1000 * 60 * 60 * 24));
+                        }
+                        return sum;
+                    }, 0) / resolvedTickets.length : 0;
+                
+                return {
+                    technicianId: tech._id,
+                    name: tech.name,
+                    specialization: tech.specialization,
+                    totalAssigned: assignedTickets.length,
+                    totalResolved: resolvedTickets.length,
+                    resolutionRate: assignedTickets.length > 0 ? 
+                        (resolvedTickets.length / assignedTickets.length) * 100 : 0,
+                    avgResolutionTime: Math.round(avgResolutionTime * 10) / 10,
+                    openTickets: tech.openTickets || 0,
+                    rating: tech.rating || 0
+                };
+            }));
+            
+            res.json({ performance });
+        } else {
+            const technicians = fallbackStorage.users.filter(user => user.role === 'technician');
+            
+            const performance = technicians.map(tech => ({
+                technicianId: tech._id,
+                name: tech.name,
+                specialization: tech.specialization || 'General',
+                totalAssigned: tech.totalResolved || 0,
+                totalResolved: tech.totalResolved || 0,
+                resolutionRate: 95,
+                avgResolutionTime: Math.random() * 3 + 1, // Random 1-4 days
+                openTickets: tech.openTickets || 0,
+                rating: tech.rating || (Math.random() * 2 + 3) // Random 3-5 rating
+            }));
+            
+            res.json({ performance });
+        }
+    } catch (error) {
+        console.error('Get performance analytics error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// System Settings APIs
+app.get('/api/admin/settings', authenticateToken, async (req, res) => {
+    try {
+        // Only allow authority to access settings
+        if (req.user.role !== 'authority') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        const settings = {
+            system: {
+                appName: 'Civix Admin',
+                version: '1.0.0',
+                maintenanceMode: false,
+                maxFileSize: '10MB',
+                allowedFileTypes: ['image/jpeg', 'image/png', 'image/gif']
+            },
+            notifications: {
+                emailEnabled: true,
+                smsEnabled: false,
+                pushNotificationsEnabled: true,
+                adminNotifications: true
+            },
+            tickets: {
+                autoAssignment: false,
+                urgencyLevels: ['low', 'moderate', 'high', 'critical'],
+                defaultUrgency: 'moderate',
+                maxTicketsPerTechnician: 10
+            },
+            users: {
+                autoApproval: true,
+                requireEmailVerification: false,
+                defaultRole: 'citizen',
+                maxUsersPerRole: {
+                    citizen: -1,
+                    technician: 50,
+                    authority: 5
+                }
+            }
+        };
+        
+        res.json(settings);
+    } catch (error) {
+        console.error('Get settings error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.put('/api/admin/settings', authenticateToken, async (req, res) => {
+    try {
+        // Only allow authority to update settings
+        if (req.user.role !== 'authority') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        const { system, notifications, tickets, users } = req.body;
+        
+        // In a real implementation, this would save to database
+        // For now, just return the updated settings
+        const updatedSettings = {
+            system: system || {},
+            notifications: notifications || {},
+            tickets: tickets || {},
+            users: users || {},
+            updatedAt: new Date()
+        };
+        
+        res.json(updatedSettings);
+    } catch (error) {
+        console.error('Update settings error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
