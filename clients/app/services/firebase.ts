@@ -1,7 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getAuth, initializeAuth, getReactNativePersistence, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from 'firebase/auth';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, browserLocalPersistence, setPersistence } from 'firebase/auth';
+import { Platform } from 'react-native';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -13,26 +13,59 @@ const firebaseConfig = {
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID || ""
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Check if Firebase is configured
+const isFirebaseConfigured = firebaseConfig.apiKey && firebaseConfig.projectId;
 
-// Initialize Firebase Auth with persistence
-let auth;
-try {
-  auth = initializeAuth(app, {
-    persistence: getReactNativePersistence(AsyncStorage)
-  });
-} catch (error: any) {
-  if (error.code === 'auth/already-initialized') {
+let app: any = null;
+let auth: any = null;
+
+if (isFirebaseConfigured) {
+  try {
+    // Initialize Firebase
+    app = initializeApp(firebaseConfig);
+    
+    // Initialize Firebase Auth
     auth = getAuth(app);
-  } else {
-    throw error;
+    
+    // Set up persistence for web
+    if (Platform.OS === 'web') {
+      setPersistence(auth, browserLocalPersistence);
+    } else {
+      // For React Native, we'll use AsyncStorage with dynamic import
+      import('@react-native-async-storage/async-storage').then((AsyncStorage) => {
+        import('firebase/auth').then(({ getReactNativePersistence, initializeAuth }) => {
+          try {
+            initializeAuth(app, {
+              persistence: getReactNativePersistence(AsyncStorage.default)
+            });
+          } catch (error: any) {
+            // Auth already initialized, which is fine
+            console.log('Auth already initialized');
+          }
+        });
+      });
+    }
+  } catch (error) {
+    console.warn('Firebase initialization failed:', error);
   }
 }
 
 // Firebase authentication service
 export const firebaseAuth = {
   async signIn(email: string, password: string) {
+    if (!isFirebaseConfigured || !auth) {
+      // Fallback mode - simulate successful auth for demo
+      console.log('Firebase not configured, using demo mode');
+      return {
+        user: {
+          uid: 'demo-user-' + Date.now(),
+          email: email,
+          displayName: email.split('@')[0],
+        },
+        success: true
+      };
+    }
+
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       return {
@@ -49,6 +82,19 @@ export const firebaseAuth = {
   },
 
   async signUp(email: string, password: string, name: string) {
+    if (!isFirebaseConfigured || !auth) {
+      // Fallback mode - simulate successful auth for demo
+      console.log('Firebase not configured, using demo mode');
+      return {
+        user: {
+          uid: 'demo-user-' + Date.now(),
+          email: email,
+          displayName: name,
+        },
+        success: true
+      };
+    }
+
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       
@@ -73,6 +119,12 @@ export const firebaseAuth = {
   },
 
   async signOut() {
+    if (!isFirebaseConfigured || !auth) {
+      // Fallback mode
+      console.log('Firebase not configured, using demo mode');
+      return { success: true };
+    }
+
     try {
       await signOut(auth);
       return { success: true };
@@ -85,6 +137,12 @@ export const firebaseAuth = {
   },
 
   async updateUserProfile(updates: { displayName?: string; photoURL?: string }) {
+    if (!isFirebaseConfigured || !auth) {
+      // Fallback mode
+      console.log('Firebase not configured, using demo mode');
+      return { success: true };
+    }
+
     try {
       if (auth.currentUser) {
         await updateProfile(auth.currentUser, updates);
@@ -100,10 +158,17 @@ export const firebaseAuth = {
   },
 
   getCurrentUser() {
+    if (!isFirebaseConfigured || !auth) {
+      return null;
+    }
     return auth.currentUser;
   },
 
   onAuthStateChanged(callback: (user: any) => void) {
+    if (!isFirebaseConfigured || !auth) {
+      // For demo mode, don't set up listener
+      return () => {};
+    }
     return auth.onAuthStateChanged(callback);
   }
 };

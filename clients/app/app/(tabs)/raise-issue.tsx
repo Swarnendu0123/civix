@@ -13,10 +13,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
 import { Colors } from '@/constants/Colors';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useAuth } from '@/hooks/useAuth';
 import api from '@/services/api';
 
 export default function RaiseIssueScreen() {
   const { colorScheme } = useTheme();
+  const { user } = useAuth();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [issueTitle, setIssueTitle] = useState('');
@@ -95,6 +97,8 @@ export default function RaiseIssueScreen() {
       formData.append('location_lat', '19.0760'); // Default coordinates - would be GPS in real app
       formData.append('location_lng', '72.8777');
       formData.append('tags', selectedTags.join(','));
+      formData.append('reported_by', user?.email || 'anonymous');
+      formData.append('reporter_id', user?._id || 'anonymous');
 
       // If image is selected, you would add it here
       // formData.append('image', imageFile);
