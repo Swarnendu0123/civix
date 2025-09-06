@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   ScrollView, 
   View, 
@@ -12,31 +12,24 @@ import { useTheme } from '@/hooks/useTheme';
 import { Colors } from '@/constants/Colors';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import ThemeToggle from '@/components/ThemeToggle';
+import { useAuth } from '@/hooks/useAuth';
+import EditProfileModal from '@/components/EditProfileModal';
 
 export default function ProfileScreen() {
   const { colorScheme } = useTheme();
-
-  // Sample user data - in real app would come from auth context
-  const user = {
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '+91 98765-43210',
-    points: 250,
-    joinedDate: '2023-06-15',
-    isTechnician: false,
-    location: 'Sector 12, Gurgaon'
-  };
+  const { user, logout } = useAuth();
+  const [editModalVisible, setEditModalVisible] = useState(false);
 
   // Sample user analytics - in real app would come from API
   const analytics = {
     ticketsReported: 12,
     ticketsUpvoted: 45,
-    pointsEarned: 250,
+    pointsEarned: user?.points || 250,
     badgesEarned: 3
   };
 
   const handleEditProfile = () => {
-    Alert.alert('Edit Profile', 'Would navigate to edit profile screen');
+    setEditModalVisible(true);
   };
 
   const handleSettings = () => {
@@ -49,8 +42,12 @@ export default function ProfileScreen() {
       'Are you sure you want to logout?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Logout', style: 'destructive', onPress: () => {
-          Alert.alert('Logged Out', 'You have been logged out successfully');
+        { text: 'Logout', style: 'destructive', onPress: async () => {
+          try {
+            await logout();
+          } catch (error) {
+            Alert.alert('Error', 'Failed to logout. Please try again.');
+          }
         }}
       ]
     );
@@ -65,11 +62,25 @@ export default function ProfileScreen() {
   };
 
   const formatJoinDate = (dateString: string) => {
+    if (!dateString) return 'Recently';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long'
     });
   };
+
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Profile</Text>
+        </View>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading profile...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const styles = createStyles(colorScheme);
 
@@ -90,7 +101,7 @@ export default function ProfileScreen() {
             <View style={styles.avatar}>
               <IconSymbol name="person.fill" size={48} color="white" />
             </View>
-            {user.isTechnician && (
+            {user.role === 'technician' && (
               <View style={styles.technicianBadge}>
                 <IconSymbol name="wrench.fill" size={16} color="white" />
               </View>
@@ -98,16 +109,20 @@ export default function ProfileScreen() {
           </View>
           
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>{user.name}</Text>
-            {user.isTechnician && (
+            <Text style={styles.userName}>{user.name || 'User'}</Text>
+            {user.role === 'technician' && (
               <Text style={styles.technicianLabel}>Technician</Text>
             )}
             <Text style={styles.userEmail}>{user.email}</Text>
-            <Text style={styles.userPhone}>{user.phone}</Text>
-            <Text style={styles.userLocation}>
-              <IconSymbol name="location" size={14} color={Colors[colorScheme].tabIconDefault} />
-              {' '}{user.location}
-            </Text>
+            {user.phone && (
+              <Text style={styles.userPhone}>{user.phone}</Text>
+            )}
+            {user.location && (
+              <Text style={styles.userLocation}>
+                <IconSymbol name="location" size={14} color={Colors[colorScheme].tabIconDefault} />
+                {' '}{user.location}
+              </Text>
+            )}
             <Text style={styles.joinDate}>
               Member since {formatJoinDate(user.joinedDate)}
             </Text>
@@ -191,6 +206,13 @@ export default function ProfileScreen() {
           <Text style={styles.versionText}>Civix Version 1.0.0</Text>
         </View>
       </ScrollView>
+
+      {/* Edit Profile Modal */}
+      <EditProfileModal
+        visible={editModalVisible}
+        onClose={() => setEditModalVisible(false)}
+        currentName={user.name || ''}
+      />
     </SafeAreaView>
   );
 }
@@ -416,5 +438,14 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
   versionText: {
     fontSize: 14,
     color: Colors[colorScheme].tabIconDefault,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: Colors[colorScheme].text,
   },
 });

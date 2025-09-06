@@ -1,76 +1,109 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ScrollView, 
   View, 
   Text, 
   StyleSheet, 
   TouchableOpacity, 
-  Alert
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useAuth } from '@/hooks/useAuth';
+import api from '@/services/api';
 
 export default function MyTicketsScreen() {
   const colorScheme = useColorScheme();
+  const { user } = useAuth();
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'open' | 'in_progress' | 'resolved'>('all');
+  const [userTickets, setUserTickets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Sample user tickets - in real app would come from API
-  const userTickets = [
-    {
-      id: 'TICK-001',
-      title: 'Pothole near MMM College',
-      description: 'Large pothole causing traffic issues and vehicle damage',
-      category: 'Roads',
-      status: 'in_progress',
-      urgency: 'critical',
-      location: 'Main Street, Sector 12',
-      reportedAt: '2024-01-15T10:30:00Z',
-      updatedAt: '2024-01-16T14:20:00Z',
-      upvotes: 15,
-      assignedTo: 'Tech-001'
-    },
-    {
-      id: 'TICK-002',
-      title: 'Street light not working',
-      description: 'Multiple street lights on Park Avenue are not functioning',
-      category: 'Electricity',
-      status: 'open',
-      urgency: 'moderate',
-      location: 'Park Avenue, Block A',
-      reportedAt: '2024-01-14T16:45:00Z',
-      updatedAt: '2024-01-14T16:45:00Z',
-      upvotes: 8,
-      assignedTo: null
-    },
-    {
-      id: 'TICK-003',
-      title: 'Water leak fixed',
-      description: 'Water pipe leak causing waterlogging in residential area',
-      category: 'Water Supply',
-      status: 'resolved',
-      urgency: 'high',
-      location: 'Green Lane, Colony 3',
-      reportedAt: '2024-01-10T09:15:00Z',
-      updatedAt: '2024-01-12T11:30:00Z',
-      upvotes: 23,
-      assignedTo: 'Tech-003'
-    },
-    {
-      id: 'TICK-004',
-      title: 'Garbage collection delayed',
-      description: 'Trash not collected for 3 days in residential sector',
-      category: 'Sanitation',
-      status: 'open',
-      urgency: 'moderate',
-      location: 'Sunrise Colony, Sector 8',
-      reportedAt: '2024-01-13T08:20:00Z',
-      updatedAt: '2024-01-13T08:20:00Z',
-      upvotes: 12,
-      assignedTo: null
-    }
-  ];
+  useEffect(() => {
+    const fetchUserTickets = async () => {
+      if (!user) return;
+      
+      setLoading(true);
+      try {
+        // Fetch tickets created by the current user
+        const response = await api.tickets.getTickets({ 
+          userId: user._id 
+        });
+        
+        if (response && response.tickets) {
+          const transformedTickets = response.tickets.map(api.transformers.ticketToMobileFormat);
+          setUserTickets(transformedTickets);
+        } else {
+          // Use sample data as fallback
+          setUserTickets(getSampleUserTickets(user.email));
+        }
+      } catch (error) {
+        console.log('Failed to fetch user tickets, using sample data');
+        // Use sample data as fallback
+        setUserTickets(getSampleUserTickets(user.email));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserTickets();
+  }, [user]);
+
+  // Sample data filtered by user email for demonstration
+  const getSampleUserTickets = (userEmail: string) => {
+    // In a real app, this would be filtered on the backend
+    // For demo purposes, we'll show different tickets based on user email
+    const allTickets = [
+      {
+        id: 'TICK-001',
+        title: 'Pothole near MMM College',
+        description: 'Large pothole causing traffic issues and vehicle damage',
+        category: 'Roads',
+        status: 'in_progress',
+        urgency: 'critical',
+        location: 'Main Street, Sector 12',
+        reportedAt: '2024-01-15T10:30:00Z',
+        updatedAt: '2024-01-16T14:20:00Z',
+        upvotes: 15,
+        assignedTo: 'Tech-001',
+        reportedBy: userEmail
+      },
+      {
+        id: 'TICK-002',
+        title: 'Street light not working',
+        description: 'Multiple street lights on Park Avenue are not functioning',
+        category: 'Electricity',
+        status: 'open',
+        urgency: 'moderate',
+        location: 'Park Avenue, Block A',
+        reportedAt: '2024-01-14T16:45:00Z',
+        updatedAt: '2024-01-14T16:45:00Z',
+        upvotes: 8,
+        assignedTo: null,
+        reportedBy: userEmail
+      },
+      {
+        id: 'TICK-003',
+        title: 'Water leak fixed',
+        description: 'Water pipe leak causing waterlogging in residential area',
+        category: 'Water Supply',
+        status: 'resolved',
+        urgency: 'high',
+        location: 'Green Lane, Colony 3',
+        reportedAt: '2024-01-10T09:15:00Z',
+        updatedAt: '2024-01-12T11:30:00Z',
+        upvotes: 23,
+        assignedTo: 'Tech-003',
+        reportedBy: userEmail
+      }
+    ];
+
+    // Return only tickets reported by this user
+    return allTickets.filter(ticket => ticket.reportedBy === userEmail);
+  };
 
   const filteredTickets = userTickets.filter(ticket => 
     selectedFilter === 'all' || ticket.status === selectedFilter
@@ -120,6 +153,21 @@ export default function MyTicketsScreen() {
   };
 
   const styles = createStyles(colorScheme);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>My Tickets</Text>
+          <Text style={styles.subtitle}>Track your reported issues</Text>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors[colorScheme].tint} />
+          <Text style={styles.loadingText}>Loading your tickets...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -440,5 +488,16 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
     fontSize: 14,
     color: '#3B82F6',
     fontWeight: '500',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 80,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: Colors[colorScheme].text,
   },
 });

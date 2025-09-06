@@ -4,11 +4,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useAuth } from '@/hooks/useAuth';
+import { router } from 'expo-router';
 import api from '@/services/api';
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
-  const [user, setUser] = useState({ name: 'John Doe', points: 250 });
+  const { user } = useAuth();
   const [analytics, setAnalytics] = useState({
     activeTickets: 0,
     resolvedToday: 0,
@@ -21,18 +23,6 @@ export default function HomeScreen() {
     const fetchHomeData = async () => {
       try {
         setLoading(true);
-        
-        // If user is authenticated, fetch real data
-        try {
-          const profileData = await api.user.getProfile();
-          setUser({
-            name: profileData.name,
-            points: profileData.points || 250
-          });
-        } catch (error) {
-          // User not authenticated, use sample data
-          console.log('User not authenticated, using sample data');
-        }
 
         // Fetch analytics data
         try {
@@ -96,7 +86,7 @@ export default function HomeScreen() {
   };
 
   const handleReportIssue = () => {
-    Alert.alert('Navigation', 'Would navigate to Raise Issue tab');
+    router.push('/raise-issue');
   };
 
   const handleJoinEvent = () => {
@@ -104,7 +94,7 @@ export default function HomeScreen() {
   };
 
   const handleMapView = () => {
-    Alert.alert('Navigation', 'Would navigate to Map View tab');
+    router.push('/map');
   };
 
   const styles = createStyles(colorScheme);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ScrollView, 
   View, 
@@ -6,75 +6,113 @@ import {
   StyleSheet, 
   TouchableOpacity, 
   Alert,
-  Modal
+  Modal,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function MyTasksScreen() {
   const colorScheme = useColorScheme();
+  const { user } = useAuth();
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'assigned' | 'in_progress' | 'completed'>('all');
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [assignedTasks, setAssignedTasks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Check if user is a technician - in real app would come from auth context
-  const isTechnician = true; // This would be determined by user role
+  const isTechnician = user?.role === 'technician' || user?.email?.includes('tech'); // Demo logic
 
-  // Sample assigned tasks - in real app would come from API
-  const assignedTasks = [
-    {
-      id: 'TASK-001',
-      ticketId: 'TICK-001',
-      title: 'Fix pothole near MMM College',
-      description: 'Large pothole causing traffic issues and vehicle damage',
-      category: 'Roads',
-      status: 'assigned',
-      priority: 'high',
-      location: 'Main Street, Sector 12',
-      assignedAt: '2024-01-15T10:30:00Z',
-      dueDate: '2024-01-17T17:00:00Z',
-      reportedBy: 'John Doe',
-      estimatedTime: '4 hours',
-      requiredMaterials: ['Asphalt', 'Tools', 'Safety cones']
-    },
-    {
-      id: 'TASK-002',
-      ticketId: 'TICK-003',
-      title: 'Repair street lights on Park Avenue',
-      description: 'Multiple street lights not functioning properly',
-      category: 'Electricity',
-      status: 'in_progress',
-      priority: 'medium',
-      location: 'Park Avenue, Block A',
-      assignedAt: '2024-01-14T14:20:00Z',
-      dueDate: '2024-01-16T16:00:00Z',
-      reportedBy: 'Sarah Smith',
-      estimatedTime: '6 hours',
-      requiredMaterials: ['LED bulbs', 'Electrical tools', 'Ladder'],
-      startedAt: '2024-01-15T09:00:00Z',
-      progress: 60
-    },
-    {
-      id: 'TASK-003',
-      ticketId: 'TICK-005',
-      title: 'Water pipe leak repair',
-      description: 'Underground water pipe leak causing road damage',
-      category: 'Water Supply',
-      status: 'completed',
-      priority: 'high',
-      location: 'Green Lane, Colony 3',
-      assignedAt: '2024-01-10T08:15:00Z',
-      dueDate: '2024-01-12T12:00:00Z',
-      reportedBy: 'Mike Johnson',
-      estimatedTime: '8 hours',
-      requiredMaterials: ['Pipes', 'Fittings', 'Excavation tools'],
-      startedAt: '2024-01-10T10:00:00Z',
-      completedAt: '2024-01-11T16:30:00Z',
-      proofOfWork: 'photo_evidence.jpg'
-    }
-  ];
+  useEffect(() => {
+    const fetchAssignedTasks = async () => {
+      if (!user || !isTechnician) {
+        setLoading(false);
+        return;
+      }
+      
+      setLoading(true);
+      try {
+        // In a real app, this would fetch from API based on user email/ID
+        // For demo, we'll simulate tasks assigned to this user
+        const userAssignedTasks = getSampleAssignedTasks(user.email);
+        setAssignedTasks(userAssignedTasks);
+      } catch (error) {
+        console.log('Failed to fetch assigned tasks');
+        setAssignedTasks([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAssignedTasks();
+  }, [user, isTechnician]);
+
+  // Sample assigned tasks based on user email
+  const getSampleAssignedTasks = (userEmail: string) => {
+    // In a real app, tasks would be filtered by assigned technician email on backend
+    const allTasks = [
+      {
+        id: 'TASK-001',
+        ticketId: 'TICK-001',
+        title: 'Fix pothole near MMM College',
+        description: 'Large pothole causing traffic issues and vehicle damage',
+        category: 'Roads',
+        status: 'assigned',
+        priority: 'high',
+        location: 'Main Street, Sector 12',
+        assignedAt: '2024-01-15T10:30:00Z',
+        dueDate: '2024-01-17T17:00:00Z',
+        reportedBy: 'John Doe',
+        estimatedTime: '4 hours',
+        requiredMaterials: ['Asphalt', 'Tools', 'Safety cones'],
+        assignedTo: userEmail
+      },
+      {
+        id: 'TASK-002',
+        ticketId: 'TICK-003',
+        title: 'Repair street lights on Park Avenue',
+        description: 'Multiple street lights not functioning properly',
+        category: 'Electricity',
+        status: 'in_progress',
+        priority: 'medium',
+        location: 'Park Avenue, Block A',
+        assignedAt: '2024-01-14T14:20:00Z',
+        dueDate: '2024-01-16T16:00:00Z',
+        reportedBy: 'Sarah Smith',
+        estimatedTime: '6 hours',
+        requiredMaterials: ['LED bulbs', 'Electrical tools', 'Ladder'],
+        startedAt: '2024-01-15T09:00:00Z',
+        progress: 60,
+        assignedTo: userEmail
+      },
+      {
+        id: 'TASK-003',
+        ticketId: 'TICK-005',
+        title: 'Water pipe leak repair',
+        description: 'Underground water pipe leak causing road damage',
+        category: 'Water Supply',
+        status: 'completed',
+        priority: 'high',
+        location: 'Green Lane, Colony 3',
+        assignedAt: '2024-01-10T08:15:00Z',
+        dueDate: '2024-01-12T12:00:00Z',
+        reportedBy: 'Mike Johnson',
+        estimatedTime: '8 hours',
+        requiredMaterials: ['Pipes', 'Fittings', 'Excavation tools'],
+        startedAt: '2024-01-10T10:00:00Z',
+        completedAt: '2024-01-11T16:30:00Z',
+        proofOfWork: 'photo_evidence.jpg',
+        assignedTo: userEmail
+      }
+    ];
+
+    // Return only tasks assigned to this user
+    return allTasks.filter(task => task.assignedTo === userEmail);
+  };
 
   const filteredTasks = assignedTasks.filter(task => 
     selectedFilter === 'all' || task.status === selectedFilter
@@ -142,6 +180,21 @@ export default function MyTasksScreen() {
   };
 
   const styles = createStyles(colorScheme);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>My Tasks</Text>
+          <Text style={styles.subtitle}>Manage your assigned work</Text>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors[colorScheme].tint} />
+          <Text style={styles.loadingText}>Loading your tasks...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!isTechnician) {
     return (
@@ -685,5 +738,16 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
     fontSize: 16,
     color: '#10B981',
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 80,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: Colors[colorScheme].text,
   },
 });
