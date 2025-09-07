@@ -4,6 +4,7 @@ import {
   FiX, 
   FiAlertCircle, 
   FiClock,
+  FiUser,
   FiUsers
 } from 'react-icons/fi';
 import api from '../services/api';
