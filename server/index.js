@@ -20,7 +20,7 @@ let fallbackStorage = {
 };
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 8000;
 
 // Connect to MongoDB
 let isConnectedToDB = false;
