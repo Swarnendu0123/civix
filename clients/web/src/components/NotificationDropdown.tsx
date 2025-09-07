@@ -10,11 +10,13 @@ import api from '../services/api';
 
 interface Notification {
   _id: string;
-  type: 'ticket' | 'user' | 'system';
+  type: 'ticket' | 'user' | 'system' | 'issue_unclassified' | 'llm_assignment_pending' | 'no_technicians_available' | 'manual_assignment_required';
   title: string;
   message: string;
   data: any;
   read: boolean;
+  actionable?: boolean;
+  priority?: 'low' | 'medium' | 'high' | 'critical';
   createdAt: string;
 }
 
@@ -67,6 +69,14 @@ const NotificationDropdown: React.FC = () => {
         return <FiUsers className="h-5 w-5 text-blue-500" />;
       case 'system':
         return <FiClock className="h-5 w-5 text-gray-500" />;
+      case 'issue_unclassified':
+        return <FiAlertCircle className="h-5 w-5 text-orange-500" />;
+      case 'llm_assignment_pending':
+        return <FiUser className="h-5 w-5 text-purple-500" />;
+      case 'no_technicians_available':
+        return <FiUsers className="h-5 w-5 text-red-600" />;
+      case 'manual_assignment_required':
+        return <FiAlertCircle className="h-5 w-5 text-amber-500" />;
       default:
         return <FiBell className="h-5 w-5 text-gray-500" />;
     }
@@ -171,11 +181,28 @@ const NotificationDropdown: React.FC = () => {
                 {notifications.map((notification) => (
                   <div
                     key={notification._id}
-                    className={`px-4 py-3 hover:bg-gray-50 cursor-pointer border-l-4 border-l-blue-400 ${
+                    className={`px-4 py-3 hover:bg-gray-50 cursor-pointer border-l-4 ${getPriorityBorderColor(notification.priority, notification.actionable)} ${
                       !notification.read ? 'bg-blue-50' : ''
                     }`}
                     onClick={() => markAsRead(notification._id)}
                   >
+  const getPriorityBorderColor = (priority: string | undefined, actionable: boolean | undefined) => {
+    if (actionable) {
+      switch (priority) {
+        case 'critical':
+          return 'border-l-red-600';
+        case 'high':
+          return 'border-l-orange-500';
+        case 'medium':
+          return 'border-l-blue-500';
+        case 'low':
+          return 'border-l-green-500';
+        default:
+          return 'border-l-blue-400';
+      }
+    }
+    return 'border-l-blue-400';
+  };
                     <div className="flex items-start">
                       <div className="flex-shrink-0">
                         {getNotificationIcon(notification.type)}
@@ -194,6 +221,58 @@ const NotificationDropdown: React.FC = () => {
                         <p className="text-xs text-gray-500 mt-1">
                           {formatTimestamp(notification.createdAt)}
                         </p>
+                        {notification.actionable && (
+                          <div className="mt-2 flex space-x-2">
+                            {notification.type === 'issue_unclassified' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Handle manual classification
+                                  window.location.href = `/issues/${notification.data.ticketId}`;
+                                }}
+                                className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
+                              >
+                                Classify & Assign
+                              </button>
+                            )}
+                            {notification.type === 'llm_assignment_pending' && (
+                              <>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Handle assignment approval
+                                    window.location.href = `/issues/${notification.data.ticketId}?action=approve`;
+                                  }}
+                                  className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Handle assignment rejection
+                                    window.location.href = `/issues/${notification.data.ticketId}?action=manual`;
+                                  }}
+                                  className="text-xs bg-gray-600 text-white px-2 py-1 rounded hover:bg-gray-700"
+                                >
+                                  Manual
+                                </button>
+                              </>
+                            )}
+                            {(notification.type === 'no_technicians_available' || notification.type === 'manual_assignment_required') && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Handle manual assignment
+                                  window.location.href = `/issues/${notification.data.ticketId}?action=assign`;
+                                }}
+                                className="text-xs bg-orange-600 text-white px-2 py-1 rounded hover:bg-orange-700"
+                              >
+                                Assign Manually
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <div className="ml-2 flex-shrink-0 flex items-center space-x-2">
                         {!notification.read && (

@@ -36,10 +36,17 @@ export default function MyTasksScreen() {
       
       setLoading(true);
       try {
-        // In a real app, this would fetch from API based on user email/ID
+        // In a real app, this would fetch from API based on user ID
         // For demo, we'll simulate tasks assigned to this user
         const userAssignedTasks = getSampleAssignedTasks(user.email);
         setAssignedTasks(userAssignedTasks);
+        
+        // TODO: In real implementation, call API to get technician's tasks
+        // const response = await fetch(`/api/technicians/${user.id}/tasks`, {
+        //   headers: { Authorization: `Bearer ${user.token}` }
+        // });
+        // const tasks = await response.json();
+        // setAssignedTasks(tasks);
       } catch (error) {
         console.log('Failed to fetch assigned tasks');
         setAssignedTasks([]);
@@ -49,6 +56,15 @@ export default function MyTasksScreen() {
     };
 
     fetchAssignedTasks();
+    
+    // Set up periodic refresh to check for new assignments
+    const refreshInterval = setInterval(() => {
+      if (user && isTechnician) {
+        fetchAssignedTasks();
+      }
+    }, 30000); // Check every 30 seconds
+    
+    return () => clearInterval(refreshInterval);
   }, [user, isTechnician]);
 
   // Sample assigned tasks based on user email

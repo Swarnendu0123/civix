@@ -92,16 +92,62 @@ function classifyWithKeywords(description, title) {
  * @param {string} issueType - Original issue type from form
  * @param {string} issueDescription - Issue description
  * @param {string} issueTitle - Issue title
- * @returns {Promise<string>} - Final issue type classification
+ * @param {Object} ticketData - Full ticket data for notification context
+ * @returns {Promise<Object>} - Final issue type classification with metadata
  */
-async function processIssueType(issueType, issueDescription, issueTitle) {
+async function processIssueType(issueType, issueDescription, issueTitle, ticketData = null) {
+    const result = {
+        originalType: issueType,
+        finalType: issueType,
+        classificationMethod: 'direct',
+        requiresManualReview: false,
+        confidence: 1.0
+    };
+    
     // If issue type is not 'other', use it directly
     if (issueType && issueType !== 'other') {
-        return issueType;
+        return result;
     }
     
     // If issue type is 'other', use intent recognition
-    return await recognizeIssueIntent(issueDescription, issueTitle);
+    try {
+        const classifiedType = await recognizeIssueIntent(issueDescription, issueTitle);
+        
+        result.finalType = classifiedType;
+        result.classificationMethod = 'ai_classification';
+        
+        // If classification returns 'unknown', this requires manual review
+        if (classifiedType === 'unknown') {
+            result.requiresManualReview = true;
+            result.confidence = 0.0;
+            
+            // Create notification for admin if ticket data is provided
+            if (ticketData) {
+                const { notifyUnclassifiedIssue } = require('./notificationService');
+                notifyUnclassifiedIssue(ticketData);
+            }
+        } else {
+            // For AI-classified issues, set confidence based on method used
+            result.confidence = process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'demo-key' ? 0.85 : 0.70;
+        }
+        
+        return result;
+        
+    } catch (error) {
+        console.error('Error in intent recognition:', error);
+        result.finalType = 'unknown';
+        result.classificationMethod = 'error_fallback';
+        result.requiresManualReview = true;
+        result.confidence = 0.0;
+        
+        // Create notification for admin if ticket data is provided
+        if (ticketData) {
+            const { notifyUnclassifiedIssue } = require('./notificationService');
+            notifyUnclassifiedIssue(ticketData);
+        }
+        
+        return result;
+    }
 }
 
 module.exports = {

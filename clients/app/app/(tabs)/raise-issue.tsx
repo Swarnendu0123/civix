@@ -111,11 +111,25 @@ export default function RaiseIssueScreen() {
       // If image is selected, you would add it here
       // formData.append('image', imageFile);
 
-      await api.tickets.createTicket(formData);
+      const response = await api.tickets.createTicket(formData);
+
+      // Prepare success message based on assignment result
+      let successMessage = 'Your civic issue has been reported successfully!';
+      let additionalInfo = '';
+
+      if (response.autoAssignmentResult?.assigned) {
+        additionalInfo = `✅ Automatically assigned to a technician. You'll receive updates soon.`;
+      } else if (response.autoAssignmentResult?.requiresAdminApproval) {
+        additionalInfo = `🔄 Your issue is being reviewed for technician assignment.`;
+      } else if (response.classificationResult?.requiresManualReview) {
+        additionalInfo = `👥 Admin review required for proper classification and assignment.`;
+      } else {
+        additionalInfo = `📋 Your issue is in the queue for assignment.`;
+      }
 
       Alert.alert(
         'Issue Submitted',
-        'Your civic issue has been reported successfully! You will be notified of updates.',
+        `${successMessage}\n\n${additionalInfo}\n\nYou will be notified of all updates.`,
         [{ text: 'OK', onPress: () => {
           // Reset form
           setIssueTitle('');
@@ -227,6 +241,16 @@ export default function RaiseIssueScreen() {
               </TouchableOpacity>
             ))}
           </View>
+          
+          {/* Smart Classification Info */}
+          {selectedIssueType === 'other' && (
+            <View style={styles.smartClassificationInfo}>
+              <IconSymbol name="brain.head.profile" size={20} color="#8B5CF6" />
+              <Text style={styles.smartClassificationText}>
+                AI will analyze your description to automatically classify this issue into the appropriate category
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Location Section */}
@@ -508,6 +532,23 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
   issueTypeTextSelected: {
     color: '#3B82F6',
     fontWeight: '600',
+  },
+  smartClassificationInfo: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: '#8B5CF6' + '10',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#8B5CF6' + '30',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  smartClassificationText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#8B5CF6',
+    lineHeight: 18,
   },
   submitSection: {
     marginTop: 32,
