@@ -24,17 +24,25 @@ export default function RaiseIssueScreen() {
   const [issueTitle, setIssueTitle] = useState('');
   const [location, setLocation] = useState('Auto-detecting location...');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedIssueType, setSelectedIssueType] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const issueTypes = [
+    'sanitation',
+    'electricity', 
+    'water',
+    'road',
+    'other'
+  ];
+
   const availableTags = [
-    'Sanitation',
-    'Electricity', 
-    'Water',
-    'Roads',
-    'Street Lights',
-    'Drainage',
-    'Traffic',
-    'Others'
+    'Urgent',
+    'Safety Concern',
+    'Quality Issue',
+    'Infrastructure',
+    'Environment',
+    'Public Health',
+    'Accessibility'
   ];
 
   const handleImageUpload = () => {
@@ -79,8 +87,8 @@ export default function RaiseIssueScreen() {
       return;
     }
     
-    if (selectedTags.length === 0) {
-      Alert.alert('Error', 'Please select at least one category tag');
+    if (!selectedIssueType) {
+      Alert.alert('Error', 'Please select an issue type');
       return;
     }
 
@@ -91,7 +99,7 @@ export default function RaiseIssueScreen() {
       const formData = new FormData();
       formData.append('issue_name', issueTitle);
       formData.append('issue_description', description);
-      formData.append('issue_category', selectedTags[0]); // Use first selected tag as category
+      formData.append('issue_category', selectedIssueType); // Use selected issue type
       formData.append('urgency', 'moderate'); // Default urgency
       formData.append('location_address', location === 'Auto-detecting location...' ? 'User Location' : location);
       formData.append('location_lat', '19.0760'); // Default coordinates - would be GPS in real app
@@ -103,17 +111,32 @@ export default function RaiseIssueScreen() {
       // If image is selected, you would add it here
       // formData.append('image', imageFile);
 
-      await api.tickets.createTicket(formData);
+      const response = await api.tickets.createTicket(formData);
+
+      // Prepare success message based on assignment result
+      let successMessage = 'Your civic issue has been reported successfully!';
+      let additionalInfo = '';
+
+      if (response.autoAssignmentResult?.assigned) {
+        additionalInfo = `✅ Automatically assigned to a technician. You'll receive updates soon.`;
+      } else if (response.autoAssignmentResult?.requiresAdminApproval) {
+        additionalInfo = `🔄 Your issue is being reviewed for technician assignment.`;
+      } else if (response.classificationResult?.requiresManualReview) {
+        additionalInfo = `👥 Admin review required for proper classification and assignment.`;
+      } else {
+        additionalInfo = `📋 Your issue is in the queue for assignment.`;
+      }
 
       Alert.alert(
         'Issue Submitted',
-        'Your civic issue has been reported successfully! You will be notified of updates.',
+        `${successMessage}\n\n${additionalInfo}\n\nYou will be notified of all updates.`,
         [{ text: 'OK', onPress: () => {
           // Reset form
           setIssueTitle('');
           setDescription('');
           setSelectedImage(null);
           setSelectedTags([]);
+          setSelectedIssueType('');
           setLocation('Auto-detecting location...');
         }}]
       );
@@ -187,6 +210,49 @@ export default function RaiseIssueScreen() {
           />
         </View>
 
+        {/* Issue Type Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Issue Type</Text>
+          <Text style={styles.sectionSubtitle}>Select the main category for this issue</Text>
+          <View style={styles.issueTypeContainer}>
+            {issueTypes.map((type) => (
+              <TouchableOpacity
+                key={type}
+                style={[
+                  styles.issueTypeOption,
+                  selectedIssueType === type && styles.issueTypeOptionSelected
+                ]}
+                onPress={() => setSelectedIssueType(type)}
+              >
+                <View style={[
+                  styles.radioButton,
+                  selectedIssueType === type && styles.radioButtonSelected
+                ]}>
+                  {selectedIssueType === type && (
+                    <View style={styles.radioButtonInner} />
+                  )}
+                </View>
+                <Text style={[
+                  styles.issueTypeText,
+                  selectedIssueType === type && styles.issueTypeTextSelected
+                ]}>
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          
+          {/* Smart Classification Info */}
+          {selectedIssueType === 'other' && (
+            <View style={styles.smartClassificationInfo}>
+              <IconSymbol name="brain.head.profile" size={20} color="#8B5CF6" />
+              <Text style={styles.smartClassificationText}>
+                AI will analyze your description to automatically classify this issue into the appropriate category
+              </Text>
+            </View>
+          )}
+        </View>
+
         {/* Location Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Location</Text>
@@ -209,8 +275,8 @@ export default function RaiseIssueScreen() {
 
         {/* Tags Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Category Tags</Text>
-          <Text style={styles.sectionSubtitle}>Select all that apply</Text>
+          <Text style={styles.sectionTitle}>Additional Tags</Text>
+          <Text style={styles.sectionSubtitle}>Select any that apply (optional)</Text>
           <View style={styles.tagsContainer}>
             {availableTags.map((tag) => (
               <TouchableOpacity
@@ -421,6 +487,68 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
   tagTextSelected: {
     color: 'white',
     fontWeight: '600',
+  },
+  issueTypeContainer: {
+    gap: 12,
+  },
+  issueTypeOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: Colors[colorScheme].background,
+    borderWidth: 1,
+    borderColor: Colors[colorScheme].tabIconDefault + '30',
+    gap: 12,
+  },
+  issueTypeOptionSelected: {
+    backgroundColor: '#3B82F6' + '15',
+    borderColor: '#3B82F6',
+  },
+  radioButton: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: Colors[colorScheme].tabIconDefault + '50',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioButtonSelected: {
+    borderColor: '#3B82F6',
+  },
+  radioButtonInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#3B82F6',
+  },
+  issueTypeText: {
+    fontSize: 16,
+    color: Colors[colorScheme].text,
+    flex: 1,
+  },
+  issueTypeTextSelected: {
+    color: '#3B82F6',
+    fontWeight: '600',
+  },
+  smartClassificationInfo: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: '#8B5CF6' + '10',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#8B5CF6' + '30',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  smartClassificationText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#8B5CF6',
+    lineHeight: 18,
   },
   submitSection: {
     marginTop: 32,

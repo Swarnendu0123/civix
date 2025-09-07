@@ -11,6 +11,10 @@ require('dotenv').config();
 const connectDB = require('./config/database');
 const { User, Ticket, ResolveRequest, Authority } = require('./models');
 
+// Services
+const { processIssueType } = require('./services/intentRecognition');
+const { getTechnicianSuggestions } = require('./services/technicianFiltering');
+
 // Fallback in-memory storage for when MongoDB is not available
 let fallbackStorage = {
     users: [],
@@ -530,6 +534,16 @@ app.post('/api/tickets', upload.single('image'), authenticateToken, async (req, 
             });
         }
         
+        // Process issue type using intent recognition
+        const classificationResult = await processIssueType(
+            issue_category, 
+            issue_description, 
+            issue_name,
+            // We'll pass ticket data after it's created
+        );
+        
+        const processedIssueType = classificationResult.finalType;
+        
         if (isConnectedToDB) {
             // MongoDB operations
             // Find a default authority - in a real app, this would be based on location
@@ -553,7 +567,7 @@ app.post('/api/tickets', upload.single('image'), authenticateToken, async (req, 
                 creator_name: req.user.name,
                 status: 'open',
                 issue_name,
-                issue_category,
+                issue_category: processedIssueType, // Use processed issue type
                 issue_description,
                 image_url: req.file ? `/uploads/${req.file.filename}` : null,
                 tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
@@ -585,7 +599,43 @@ app.post('/api/tickets', upload.single('image'), authenticateToken, async (req, 
                 $push: { issues: newTicket._id }
             });
             
-            res.status(201).json(newTicket);
+            // Get technician suggestions for the newly created ticket
+            let technicianSuggestions = null;
+            let autoAssignmentResult = null;
+            
+            try {
+                // If classification requires manual review, create notification
+                if (classificationResult.requiresManualReview) {
+                    const { notifyUnclassifiedIssue } = require('./services/notificationService');
+                    notifyUnclassifiedIssue(newTicket);
+                } else {
+                    // Try to get technician suggestions and potentially auto-assign
+                    const { autoAssignIssue } = require('./services/technicianFiltering');
+                    autoAssignmentResult = await autoAssignIssue(newTicket, classificationResult);
+                    
+                    if (!autoAssignmentResult.assigned) {
+                        // Get suggestions for manual assignment
+                        technicianSuggestions = await getTechnicianSuggestions(newTicket, {
+                            enableNotifications: true,
+                            classificationMethod: classificationResult.classificationMethod
+                        });
+                    }
+                }
+            } catch (error) {
+                console.warn('Failed to process assignment for new ticket:', error);
+                // Create manual assignment notification as fallback
+                const { notifyManualAssignmentRequired } = require('./services/notificationService');
+                notifyManualAssignmentRequired(newTicket, 'System error during assignment processing');
+            }
+            
+            res.status(201).json({
+                ...newTicket.toObject(),
+                originalIssueCategory: issue_category,
+                processedIssueCategory: processedIssueType,
+                classificationResult,
+                autoAssignmentResult,
+                technicianSuggestions
+            });
         } else {
             // Fallback storage operations
             const ticketId = `TICK-${Date.now()}`;
@@ -595,7 +645,7 @@ app.post('/api/tickets', upload.single('image'), authenticateToken, async (req, 
                 creator_name: req.user.name,
                 status: 'open',
                 issue_name,
-                issue_category,
+                issue_category: processedIssueType, // Use processed issue type
                 issue_description,
                 image_url: req.file ? `/uploads/${req.file.filename}` : null,
                 tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
@@ -624,7 +674,28 @@ app.post('/api/tickets', upload.single('image'), authenticateToken, async (req, 
                 user.issues.push(ticketId);
             }
             
-            res.status(201).json(newTicket);
+            // Handle assignment and notifications for fallback storage
+            let autoAssignmentResult = null;
+            try {
+                if (classificationResult.requiresManualReview) {
+                    const { notifyUnclassifiedIssue } = require('./services/notificationService');
+                    notifyUnclassifiedIssue(newTicket);
+                } else {
+                    // For fallback storage, just create notifications without actual assignment
+                    const { notifyManualAssignmentRequired } = require('./services/notificationService');
+                    notifyManualAssignmentRequired(newTicket, 'Using demo mode - manual assignment required');
+                }
+            } catch (error) {
+                console.warn('Failed to create notifications for fallback ticket:', error);
+            }
+            
+            res.status(201).json({
+                ...newTicket,
+                originalIssueCategory: issue_category,
+                processedIssueCategory: processedIssueType,
+                classificationResult,
+                autoAssignmentResult
+            });
         }
     } catch (error) {
         console.error('Create ticket error:', error);
@@ -700,6 +771,73 @@ app.put('/api/tickets/:id/assign', async (req, res) => {
     }
 });
 
+// Get technician suggestions for a specific ticket
+app.get('/api/tickets/:id/technician-suggestions', authenticateToken, async (req, res) => {
+    try {
+        // Only allow authority to access technician suggestions
+        if (req.user.role !== 'authority') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        const ticket = await findTicketById(req.params.id);
+        if (!ticket) {
+            return res.status(404).json({ error: 'Ticket not found' });
+        }
+        
+        const suggestions = await getTechnicianSuggestions(ticket);
+        res.json(suggestions);
+    } catch (error) {
+        console.error('Get technician suggestions error:', error);
+        res.status(500).json({ error: 'Failed to get technician suggestions' });
+    }
+});
+
+// Assign ticket to technician with enhanced logic
+app.put('/api/tickets/:id/assign-technician', authenticateToken, async (req, res) => {
+    try {
+        // Only allow authority to assign technicians
+        if (req.user.role !== 'authority') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        const { technicianId, notes } = req.body;
+        const { assignIssueToTechnician } = require('./services/technicianFiltering');
+        
+        if (!technicianId) {
+            return res.status(400).json({ error: 'Technician ID is required' });
+        }
+        
+        const result = await assignIssueToTechnician(req.params.id, technicianId);
+        
+        // Add assignment notes if provided
+        if (notes) {
+            await Ticket.findByIdAndUpdate(req.params.id, {
+                $push: { 
+                    notes: {
+                        content: notes,
+                        author: req.user.name,
+                        timestamp: new Date()
+                    }
+                }
+            });
+        }
+        
+        res.json({
+            message: 'Ticket assigned successfully',
+            ticket: result.ticket,
+            technician: {
+                _id: result.technician._id,
+                name: result.technician.name,
+                specialization: result.technician.specialization,
+                openTickets: result.technician.openTickets
+            }
+        });
+    } catch (error) {
+        console.error('Enhanced assign ticket error:', error);
+        res.status(500).json({ error: error.message || 'Failed to assign ticket' });
+    }
+});
+
 app.put('/api/tickets/:id/status', async (req, res) => {
     try {
         const { status } = req.body;
@@ -744,38 +882,47 @@ app.put('/api/tickets/:id/status', async (req, res) => {
 // Technician endpoints
 app.get('/api/technicians', async (req, res) => {
     try {
-        const { specialization, status, department } = req.query;
+        const { specialization, status, department, issueType, available } = req.query;
         
         let technicians = [];
         
         if (isConnectedToDB) {
             const filter = { role: 'technician' };
             
-            if (specialization) {
-                filter.specialization = { $regex: specialization, $options: 'i' };
+            // Filter by specialization/issue type
+            if (specialization || issueType) {
+                const searchTerm = specialization || issueType;
+                filter.specialization = { $regex: searchTerm, $options: 'i' };
             }
             
+            // Filter by status
             if (status) {
                 filter.status = status;
+            } else if (available === 'true') {
+                // Only show active technicians if available filter is requested
+                filter.status = 'active';
             }
             
             if (department) {
                 filter.dept = { $regex: department, $options: 'i' };
             }
             
-            technicians = await User.find(filter);
+            technicians = await User.find(filter).select('-password');
         } else {
             // Fallback storage operations
             technicians = fallbackStorage.users.filter(user => user.role === 'technician');
             
-            if (specialization) {
+            if (specialization || issueType) {
+                const searchTerm = specialization || issueType;
                 technicians = technicians.filter(tech => 
-                    tech.specialization && tech.specialization.toLowerCase().includes(specialization.toLowerCase())
+                    tech.specialization && tech.specialization.toLowerCase().includes(searchTerm.toLowerCase())
                 );
             }
             
             if (status) {
                 technicians = technicians.filter(tech => tech.status === status);
+            } else if (available === 'true') {
+                technicians = technicians.filter(tech => tech.status === 'active');
             }
             
             if (department) {
@@ -789,6 +936,30 @@ app.get('/api/technicians', async (req, res) => {
     } catch (error) {
         console.error('Get technicians error:', error);
         res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Get filtered technicians for specific issue type
+app.get('/api/technicians/filtered/:issueType', authenticateToken, async (req, res) => {
+    try {
+        // Only allow authority to access filtered technicians
+        if (req.user.role !== 'authority') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        const { issueType } = req.params;
+        const { filterTechniciansForIssue } = require('./services/technicianFiltering');
+        
+        const technicians = await filterTechniciansForIssue(issueType);
+        
+        res.json({
+            issueType,
+            availableTechnicians: technicians.length,
+            technicians
+        });
+    } catch (error) {
+        console.error('Get filtered technicians error:', error);
+        res.status(500).json({ error: 'Failed to filter technicians' });
     }
 });
 
@@ -970,7 +1141,7 @@ app.delete('/api/technicians/:id', authenticateToken, async (req, res) => {
 });
 
 // Technician task endpoints
-app.get('/api/technicians/:id/tasks', async (req, res) => {
+app.get('/api/technicians/:id/tasks', authenticateToken, async (req, res) => {
     try {
         const { status: taskStatus } = req.query;
         const technicianId = req.params.id;
@@ -986,10 +1157,71 @@ app.get('/api/technicians/:id/tasks', async (req, res) => {
             filter.status = taskStatus;
         }
         
-        const tasks = await Ticket.find(filter).sort({ opening_time: -1 });
-        res.json(tasks);
+        if (isConnectedToDB) {
+            const tasks = await Ticket.find(filter).sort({ opening_time: -1 });
+            res.json(tasks);
+        } else {
+            // Fallback storage
+            const tasks = fallbackStorage.tickets.filter(ticket => {
+                const matchesTechnician = ticket.assigned_technician === technicianId;
+                const matchesStatus = taskStatus ? ticket.status === taskStatus : true;
+                return matchesTechnician && matchesStatus;
+            });
+            res.json(tasks);
+        }
     } catch (error) {
         console.error('Get technician tasks error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Get technician task summary (counts by status)
+app.get('/api/technicians/:id/task-summary', authenticateToken, async (req, res) => {
+    try {
+        const technicianId = req.params.id;
+        
+        // Ensure technician can only access their own data or admin can access any
+        if (req.user._id !== technicianId && req.user.role !== 'authority') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        if (isConnectedToDB) {
+            const openTasks = await Ticket.countDocuments({ 
+                assigned_technician: technicianId, 
+                status: 'open' 
+            });
+            const inProgressTasks = await Ticket.countDocuments({ 
+                assigned_technician: technicianId, 
+                status: 'in process' 
+            });
+            const resolvedTasks = await Ticket.countDocuments({ 
+                assigned_technician: technicianId, 
+                status: 'resolved' 
+            });
+            
+            res.json({
+                open: openTasks,
+                inProgress: inProgressTasks,
+                resolved: resolvedTasks,
+                total: openTasks + inProgressTasks + resolvedTasks
+            });
+        } else {
+            // Fallback storage
+            const tasks = fallbackStorage.tickets.filter(ticket => 
+                ticket.assigned_technician === technicianId
+            );
+            
+            const summary = {
+                open: tasks.filter(t => t.status === 'open').length,
+                inProgress: tasks.filter(t => t.status === 'in process').length,
+                resolved: tasks.filter(t => t.status === 'resolved').length,
+                total: tasks.length
+            };
+            
+            res.json(summary);
+        }
+    } catch (error) {
+        console.error('Get technician task summary error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -1168,19 +1400,35 @@ app.get('/api/admin/notifications', authenticateToken, async (req, res) => {
             return res.status(403).json({ error: 'Access denied' });
         }
         
-        const { page = 1, limit = 20, read } = req.query;
+        const { page = 1, limit = 20, read, type, priority } = req.query;
         
-        // For now, generate sample notifications based on recent system activity
+        // Get notifications from our notification service
+        const notificationService = require('./services/notificationService');
+        const notifications = notificationService.getNotifications({
+            read: read ? read === 'true' : undefined,
+            type,
+            priority
+        });
+        
+        // Pagination
+        const pageNum = parseInt(page);
+        const limitNum = parseInt(limit);
+        const startIndex = (pageNum - 1) * limitNum;
+        const endIndex = startIndex + limitNum;
+        const paginatedNotifications = notifications.slice(startIndex, endIndex);
+        
+        // If we have specific admin notifications, merge with system-generated ones
+        let systemNotifications = [];
         if (isConnectedToDB) {
             const recentTickets = await Ticket.find()
                 .sort({ opening_time: -1 })
-                .limit(10);
+                .limit(5);
             
             const recentUsers = await User.find()
                 .sort({ createdAt: -1 })
-                .limit(5);
+                .limit(3);
             
-            const notifications = [
+            systemNotifications = [
                 ...recentTickets.map(ticket => ({
                     _id: `notif-ticket-${ticket._id}`,
                     type: 'ticket',
@@ -1188,6 +1436,8 @@ app.get('/api/admin/notifications', authenticateToken, async (req, res) => {
                     message: `${ticket.issue_name} in ${ticket.location.address}`,
                     data: { ticketId: ticket._id },
                     read: false,
+                    actionable: false,
+                    priority: ticket.urgency === 'critical' ? 'high' : 'medium',
                     createdAt: ticket.opening_time
                 })),
                 ...recentUsers.map(user => ({
@@ -1197,52 +1447,57 @@ app.get('/api/admin/notifications', authenticateToken, async (req, res) => {
                     message: `${user.name} (${user.email}) joined as ${user.role}`,
                     data: { userId: user._id },
                     read: false,
+                    actionable: false,
+                    priority: 'low',
                     createdAt: user.createdAt || new Date()
                 }))
-            ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            
-            res.json({
-                notifications,
-                pagination: {
-                    page: parseInt(page),
-                    limit: parseInt(limit),
-                    total: notifications.length,
-                    pages: Math.ceil(notifications.length / limit)
-                }
-            });
+            ];
         } else {
             // Fallback storage notifications
-            const notifications = [
+            systemNotifications = [
                 {
-                    _id: 'notif-1',
+                    _id: 'notif-system-1',
                     type: 'system',
                     title: 'System Status',
                     message: 'Using in-memory storage. Connect MongoDB for persistent data.',
                     data: {},
                     read: false,
+                    actionable: false,
+                    priority: 'low',
                     createdAt: new Date()
                 },
-                ...fallbackStorage.tickets.slice(0, 5).map(ticket => ({
+                ...fallbackStorage.tickets.slice(0, 3).map(ticket => ({
                     _id: `notif-ticket-${ticket._id}`,
                     type: 'ticket',
                     title: `New ${ticket.urgency || 'moderate'} issue reported`,
                     message: `${ticket.issue_name} in ${ticket.location.address}`,
                     data: { ticketId: ticket._id },
                     read: false,
+                    actionable: false,
+                    priority: ticket.urgency === 'critical' ? 'high' : 'medium',
                     createdAt: ticket.opening_time
                 }))
             ];
-            
-            res.json({
-                notifications,
-                pagination: {
-                    page: parseInt(page),
-                    limit: parseInt(limit),
-                    total: notifications.length,
-                    pages: Math.ceil(notifications.length / limit)
-                }
-            });
         }
+        
+        // Merge admin notifications with system notifications
+        const allNotifications = [...paginatedNotifications, ...systemNotifications]
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        
+        res.json({
+            notifications: allNotifications,
+            counts: {
+                total: notifications.length + systemNotifications.length,
+                unread: notificationService.getUnreadCount(),
+                actionable: notificationService.getActionableCount()
+            },
+            pagination: {
+                page: pageNum,
+                limit: limitNum,
+                total: notifications.length,
+                pages: Math.ceil(notifications.length / limitNum)
+            }
+        });
     } catch (error) {
         console.error('Get notifications error:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -1257,17 +1512,211 @@ app.put('/api/admin/notifications/:id/read', authenticateToken, async (req, res)
         }
         
         const notificationId = req.params.id;
+        const notificationService = require('./services/notificationService');
         
-        // In a real implementation, this would update a notifications collection
-        // For now, just return success
-        res.json({ message: 'Notification marked as read' });
+        const updatedNotification = notificationService.markNotificationRead(notificationId);
+        
+        if (updatedNotification) {
+            res.json({ message: 'Notification marked as read', notification: updatedNotification });
+        } else {
+            res.json({ message: 'Notification marked as read' }); // For system notifications
+        }
     } catch (error) {
         console.error('Mark notification read error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
 
-// Category Management APIs
+// Enhanced assignment endpoints for admin workflow
+
+// Manual assignment endpoint for unclassified or problematic issues
+app.put('/api/admin/tickets/:id/manual-assign', authenticateToken, async (req, res) => {
+    try {
+        // Only allow authority to manually assign
+        if (req.user.role !== 'authority') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        const { technicianId, issueCategory, notes } = req.body;
+        const ticketId = req.params.id;
+        
+        if (!technicianId) {
+            return res.status(400).json({ error: 'Technician ID is required' });
+        }
+        
+        const ticket = await findTicketById(ticketId);
+        if (!ticket) {
+            return res.status(404).json({ error: 'Ticket not found' });
+        }
+        
+        const technician = await findTechnicianById(technicianId);
+        if (!technician) {
+            return res.status(404).json({ error: 'Technician not found' });
+        }
+        
+        // Update ticket with manual assignment
+        const updateData = {
+            assigned_technician: technicianId,
+            status: 'in process'
+        };
+        
+        // If issue category is being updated (for unclassified issues)
+        if (issueCategory) {
+            updateData.issue_category = issueCategory;
+        }
+        
+        const updatedTicket = await Ticket.findByIdAndUpdate(
+            ticketId,
+            updateData,
+            { new: true }
+        );
+        
+        // Update technician's workload
+        await User.findByIdAndUpdate(technicianId, {
+            $addToSet: { issues_assigned: ticketId },
+            $inc: { openTickets: 1 }
+        });
+        
+        // Add assignment notes if provided
+        if (notes) {
+            await Ticket.findByIdAndUpdate(ticketId, {
+                $push: { 
+                    notes: {
+                        content: `Manual assignment: ${notes}`,
+                        author: req.user.name,
+                        timestamp: new Date()
+                    }
+                }
+            });
+        }
+        
+        // Remove related notifications
+        const notificationService = require('./services/notificationService');
+        const notifications = notificationService.getNotifications();
+        notifications.forEach(notification => {
+            if (notification.data.ticketId === ticketId) {
+                notificationService.removeNotification(notification._id);
+            }
+        });
+        
+        res.json({
+            message: 'Ticket manually assigned successfully',
+            ticket: updatedTicket,
+            technician: {
+                _id: technician._id,
+                name: technician.name,
+                specialization: technician.specialization
+            }
+        });
+    } catch (error) {
+        console.error('Manual assignment error:', error);
+        res.status(500).json({ error: 'Failed to manually assign ticket' });
+    }
+});
+
+// Assignment approval endpoint for LLM suggestions
+app.put('/api/admin/tickets/:id/approve-assignment', authenticateToken, async (req, res) => {
+    try {
+        // Only allow authority to approve assignments
+        if (req.user.role !== 'authority') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        const { technicianId, approved, notes } = req.body;
+        const ticketId = req.params.id;
+        
+        if (!technicianId) {
+            return res.status(400).json({ error: 'Technician ID is required' });
+        }
+        
+        const ticket = await findTicketById(ticketId);
+        if (!ticket) {
+            return res.status(404).json({ error: 'Ticket not found' });
+        }
+        
+        if (approved) {
+            // Approve the suggested assignment
+            const { assignIssueToTechnician } = require('./services/technicianFiltering');
+            const assignmentResult = await assignIssueToTechnician(ticketId, technicianId);
+            
+            // Add approval notes
+            if (notes) {
+                await Ticket.findByIdAndUpdate(ticketId, {
+                    $push: { 
+                        notes: {
+                            content: `Assignment approved: ${notes}`,
+                            author: req.user.name,
+                            timestamp: new Date()
+                        }
+                    }
+                });
+            }
+            
+            res.json({
+                message: 'Assignment approved successfully',
+                ...assignmentResult
+            });
+        } else {
+            // Assignment rejected - keep ticket open for manual assignment
+            if (notes) {
+                await Ticket.findByIdAndUpdate(ticketId, {
+                    $push: { 
+                        notes: {
+                            content: `Assignment rejected: ${notes}`,
+                            author: req.user.name,
+                            timestamp: new Date()
+                        }
+                    }
+                });
+            }
+            
+            res.json({
+                message: 'Assignment rejected - ticket remains open for manual assignment',
+                ticket
+            });
+        }
+        
+        // Remove related notifications
+        const notificationService = require('./services/notificationService');
+        const notifications = notificationService.getNotifications();
+        notifications.forEach(notification => {
+            if (notification.data.ticketId === ticketId) {
+                notificationService.removeNotification(notification._id);
+            }
+        });
+        
+    } catch (error) {
+        console.error('Assignment approval error:', error);
+        res.status(500).json({ error: 'Failed to process assignment approval' });
+    }
+});
+
+// Get notification counts for admin dashboard
+app.get('/api/admin/notification-counts', authenticateToken, async (req, res) => {
+    try {
+        // Only allow authority to access notification counts
+        if (req.user.role !== 'authority') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        const notificationService = require('./services/notificationService');
+        
+        res.json({
+            total: notificationService.getNotifications().length,
+            unread: notificationService.getUnreadCount(),
+            actionable: notificationService.getActionableCount(),
+            byType: {
+                unclassified: notificationService.getNotifications({ type: 'issue_unclassified', read: false }).length,
+                llmPending: notificationService.getNotifications({ type: 'llm_assignment_pending', read: false }).length,
+                noTechnicians: notificationService.getNotifications({ type: 'no_technicians_available', read: false }).length,
+                manualRequired: notificationService.getNotifications({ type: 'manual_assignment_required', read: false }).length
+            }
+        });
+    } catch (error) {
+        console.error('Get notification counts error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 app.get('/api/admin/categories', authenticateToken, async (req, res) => {
     try {
         // Only allow authority to manage categories

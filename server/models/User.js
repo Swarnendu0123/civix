@@ -79,7 +79,18 @@ const userSchema = new mongoose.Schema({
     pulls_created: [{
         type: String,
         ref: 'ResolveRequest'
-    }]
+    }],
+    // Location field for technicians (real-time location)
+    location: {
+        lat: {
+            type: Number,
+            default: null
+        },
+        lng: {
+            type: Number,
+            default: null
+        }
+    }
 }, {
     timestamps: true,
     _id: false // We're providing custom _id

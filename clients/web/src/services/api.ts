@@ -166,6 +166,10 @@ export const ticketsAPI = {
       method: 'PUT',
       body: JSON.stringify({ status }),
     });
+  },
+
+  async getTechnicianSuggestions(ticketId: string) {
+    return apiRequest(`/tickets/${ticketId}/technician-suggestions`);
   }
 };
 
@@ -226,6 +230,10 @@ export const techniciansAPI = {
   async getTechnicianTasks(id: string, status?: string) {
     const params = status ? `?status=${status}` : '';
     return apiRequest(`/technicians/${id}/tasks${params}`);
+  },
+
+  async getFiltered(issueType: string) {
+    return apiRequest(`/technicians/filtered/${issueType}`);
   }
 };
 
@@ -360,6 +368,33 @@ export const adminAPI = {
       method: 'PUT',
       body: JSON.stringify(settings),
     });
+  },
+
+  // Enhanced Assignment APIs
+  async manualAssign(ticketId: string, data: {
+    technicianId: string;
+    issueCategory?: string;
+    notes?: string;
+  }) {
+    return apiRequest(`/admin/tickets/${ticketId}/manual-assign`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async approveAssignment(ticketId: string, data: {
+    technicianId: string;
+    approved: boolean;
+    notes?: string;
+  }) {
+    return apiRequest(`/admin/tickets/${ticketId}/approve-assignment`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async getNotificationCounts() {
+    return apiRequest('/admin/notification-counts');
   }
 };
 
