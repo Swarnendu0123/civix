@@ -128,6 +128,24 @@ const NotificationDropdown: React.FC = () => {
     }
   };
 
+  const getPriorityBorderColor = (priority: string | undefined, actionable: boolean | undefined) => {
+    if (actionable) {
+      switch (priority) {
+        case 'critical':
+          return 'border-l-red-600';
+        case 'high':
+          return 'border-l-orange-500';
+        case 'medium':
+          return 'border-l-blue-500';
+        case 'low':
+          return 'border-l-green-500';
+        default:
+          return 'border-l-blue-400';
+      }
+    }
+    return 'border-l-blue-400';
+  };
+
   const removeNotification = (id: string) => {
     setNotifications(prev => prev.filter(n => n._id !== id));
   };
@@ -186,23 +204,6 @@ const NotificationDropdown: React.FC = () => {
                     }`}
                     onClick={() => markAsRead(notification._id)}
                   >
-  const getPriorityBorderColor = (priority: string | undefined, actionable: boolean | undefined) => {
-    if (actionable) {
-      switch (priority) {
-        case 'critical':
-          return 'border-l-red-600';
-        case 'high':
-          return 'border-l-orange-500';
-        case 'medium':
-          return 'border-l-blue-500';
-        case 'low':
-          return 'border-l-green-500';
-        default:
-          return 'border-l-blue-400';
-      }
-    }
-    return 'border-l-blue-400';
-  };
                     <div className="flex items-start">
                       <div className="flex-shrink-0">
                         {getNotificationIcon(notification.type)}
