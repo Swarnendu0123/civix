@@ -11,6 +11,10 @@ require('dotenv').config();
 const connectDB = require('./config/database');
 const { User, Ticket, ResolveRequest, Authority } = require('./models');
 
+// Services
+const { processIssueType } = require('./services/intentRecognition');
+const { getTechnicianSuggestions } = require('./services/technicianFiltering');
+
 // Fallback in-memory storage for when MongoDB is not available
 let fallbackStorage = {
     users: [],
@@ -530,6 +534,13 @@ app.post('/api/tickets', upload.single('image'), authenticateToken, async (req, 
             });
         }
         
+        // Process issue type using intent recognition
+        const processedIssueType = await processIssueType(
+            issue_category, 
+            issue_description, 
+            issue_name
+        );
+        
         if (isConnectedToDB) {
             // MongoDB operations
             // Find a default authority - in a real app, this would be based on location
@@ -553,7 +564,7 @@ app.post('/api/tickets', upload.single('image'), authenticateToken, async (req, 
                 creator_name: req.user.name,
                 status: 'open',
                 issue_name,
-                issue_category,
+                issue_category: processedIssueType, // Use processed issue type
                 issue_description,
                 image_url: req.file ? `/uploads/${req.file.filename}` : null,
                 tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
@@ -585,7 +596,20 @@ app.post('/api/tickets', upload.single('image'), authenticateToken, async (req, 
                 $push: { issues: newTicket._id }
             });
             
-            res.status(201).json(newTicket);
+            // Get technician suggestions for the newly created ticket
+            let technicianSuggestions = null;
+            try {
+                technicianSuggestions = await getTechnicianSuggestions(newTicket);
+            } catch (error) {
+                console.warn('Failed to get technician suggestions:', error);
+            }
+            
+            res.status(201).json({
+                ...newTicket.toObject(),
+                originalIssueCategory: issue_category,
+                processedIssueCategory: processedIssueType,
+                technicianSuggestions
+            });
         } else {
             // Fallback storage operations
             const ticketId = `TICK-${Date.now()}`;
@@ -595,7 +619,7 @@ app.post('/api/tickets', upload.single('image'), authenticateToken, async (req, 
                 creator_name: req.user.name,
                 status: 'open',
                 issue_name,
-                issue_category,
+                issue_category: processedIssueType, // Use processed issue type
                 issue_description,
                 image_url: req.file ? `/uploads/${req.file.filename}` : null,
                 tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
@@ -624,7 +648,11 @@ app.post('/api/tickets', upload.single('image'), authenticateToken, async (req, 
                 user.issues.push(ticketId);
             }
             
-            res.status(201).json(newTicket);
+            res.status(201).json({
+                ...newTicket,
+                originalIssueCategory: issue_category,
+                processedIssueCategory: processedIssueType
+            });
         }
     } catch (error) {
         console.error('Create ticket error:', error);
@@ -700,6 +728,73 @@ app.put('/api/tickets/:id/assign', async (req, res) => {
     }
 });
 
+// Get technician suggestions for a specific ticket
+app.get('/api/tickets/:id/technician-suggestions', authenticateToken, async (req, res) => {
+    try {
+        // Only allow authority to access technician suggestions
+        if (req.user.role !== 'authority') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        const ticket = await findTicketById(req.params.id);
+        if (!ticket) {
+            return res.status(404).json({ error: 'Ticket not found' });
+        }
+        
+        const suggestions = await getTechnicianSuggestions(ticket);
+        res.json(suggestions);
+    } catch (error) {
+        console.error('Get technician suggestions error:', error);
+        res.status(500).json({ error: 'Failed to get technician suggestions' });
+    }
+});
+
+// Assign ticket to technician with enhanced logic
+app.put('/api/tickets/:id/assign-technician', authenticateToken, async (req, res) => {
+    try {
+        // Only allow authority to assign technicians
+        if (req.user.role !== 'authority') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        const { technicianId, notes } = req.body;
+        const { assignIssueToTechnician } = require('./services/technicianFiltering');
+        
+        if (!technicianId) {
+            return res.status(400).json({ error: 'Technician ID is required' });
+        }
+        
+        const result = await assignIssueToTechnician(req.params.id, technicianId);
+        
+        // Add assignment notes if provided
+        if (notes) {
+            await Ticket.findByIdAndUpdate(req.params.id, {
+                $push: { 
+                    notes: {
+                        content: notes,
+                        author: req.user.name,
+                        timestamp: new Date()
+                    }
+                }
+            });
+        }
+        
+        res.json({
+            message: 'Ticket assigned successfully',
+            ticket: result.ticket,
+            technician: {
+                _id: result.technician._id,
+                name: result.technician.name,
+                specialization: result.technician.specialization,
+                openTickets: result.technician.openTickets
+            }
+        });
+    } catch (error) {
+        console.error('Enhanced assign ticket error:', error);
+        res.status(500).json({ error: error.message || 'Failed to assign ticket' });
+    }
+});
+
 app.put('/api/tickets/:id/status', async (req, res) => {
     try {
         const { status } = req.body;
@@ -744,38 +839,47 @@ app.put('/api/tickets/:id/status', async (req, res) => {
 // Technician endpoints
 app.get('/api/technicians', async (req, res) => {
     try {
-        const { specialization, status, department } = req.query;
+        const { specialization, status, department, issueType, available } = req.query;
         
         let technicians = [];
         
         if (isConnectedToDB) {
             const filter = { role: 'technician' };
             
-            if (specialization) {
-                filter.specialization = { $regex: specialization, $options: 'i' };
+            // Filter by specialization/issue type
+            if (specialization || issueType) {
+                const searchTerm = specialization || issueType;
+                filter.specialization = { $regex: searchTerm, $options: 'i' };
             }
             
+            // Filter by status
             if (status) {
                 filter.status = status;
+            } else if (available === 'true') {
+                // Only show active technicians if available filter is requested
+                filter.status = 'active';
             }
             
             if (department) {
                 filter.dept = { $regex: department, $options: 'i' };
             }
             
-            technicians = await User.find(filter);
+            technicians = await User.find(filter).select('-password');
         } else {
             // Fallback storage operations
             technicians = fallbackStorage.users.filter(user => user.role === 'technician');
             
-            if (specialization) {
+            if (specialization || issueType) {
+                const searchTerm = specialization || issueType;
                 technicians = technicians.filter(tech => 
-                    tech.specialization && tech.specialization.toLowerCase().includes(specialization.toLowerCase())
+                    tech.specialization && tech.specialization.toLowerCase().includes(searchTerm.toLowerCase())
                 );
             }
             
             if (status) {
                 technicians = technicians.filter(tech => tech.status === status);
+            } else if (available === 'true') {
+                technicians = technicians.filter(tech => tech.status === 'active');
             }
             
             if (department) {
@@ -789,6 +893,30 @@ app.get('/api/technicians', async (req, res) => {
     } catch (error) {
         console.error('Get technicians error:', error);
         res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Get filtered technicians for specific issue type
+app.get('/api/technicians/filtered/:issueType', authenticateToken, async (req, res) => {
+    try {
+        // Only allow authority to access filtered technicians
+        if (req.user.role !== 'authority') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        const { issueType } = req.params;
+        const { filterTechniciansForIssue } = require('./services/technicianFiltering');
+        
+        const technicians = await filterTechniciansForIssue(issueType);
+        
+        res.json({
+            issueType,
+            availableTechnicians: technicians.length,
+            technicians
+        });
+    } catch (error) {
+        console.error('Get filtered technicians error:', error);
+        res.status(500).json({ error: 'Failed to filter technicians' });
     }
 });
 
