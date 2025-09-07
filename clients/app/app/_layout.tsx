@@ -6,6 +6,7 @@ import 'react-native-reanimated';
 
 import { ThemeProvider, useTheme } from '@/hooks/useTheme';
 import { AuthProvider } from '@/hooks/useAuth';
+import AuthGate from '@/components/AuthGate';
 
 function RootLayoutContent() {
   const { colorScheme } = useTheme();
@@ -20,10 +21,12 @@ function RootLayoutContent() {
 
   return (
     <NavigationThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
+      <AuthGate>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+      </AuthGate>
       <StatusBar style="auto" />
     </NavigationThemeProvider>
   );
