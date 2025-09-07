@@ -172,11 +172,6 @@ async function getTechnicianSuggestions(issue, options = {}) {
         throw new Error('Failed to get technician suggestions');
     }
 }
-    } catch (error) {
-        console.error('Error getting technician suggestions:', error);
-        throw new Error('Failed to get technician suggestions');
-    }
-}
 
 /**
  * Calculate workload score for a technician (lower is better)
