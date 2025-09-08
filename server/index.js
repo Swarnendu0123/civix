@@ -1392,6 +1392,88 @@ app.delete('/api/admin/users/:id', authenticateToken, async (req, res) => {
     }
 });
 
+// Promote user to technician
+app.put('/api/admin/users/:id/promote-to-technician', authenticateToken, async (req, res) => {
+  try {
+    // Only allow authority to promote users
+    if (req.user.role !== 'authority') {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    const { specialization, dept, contact } = req.body;
+    const userId = req.params.id;
+    
+    if (!specialization || !dept || !contact) {
+      return res.status(400).json({ error: 'Specialization, department, and contact are required' });
+    }
+    
+    if (isConnectedToDB) {
+      // Find the user
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      if (user.role === 'technician') {
+        return res.status(400).json({ error: 'User is already a technician' });
+      }
+      
+      // Update user to technician
+      const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        {
+          role: 'technician',
+          is_technician: true,
+          specialization,
+          dept,
+          contact,
+          status: 'active',
+          openTickets: 0,
+          totalResolved: 0,
+          rating: 0,
+          avgResolutionTime: '2-3 days'
+        },
+        { new: true }
+      );
+      
+      res.json(updatedUser);
+    } else {
+      // Fallback storage operations
+      const userIndex = fallbackStorage.users.findIndex(user => user._id === userId);
+      
+      if (userIndex === -1) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      const user = fallbackStorage.users[userIndex];
+      
+      if (user.role === 'technician') {
+        return res.status(400).json({ error: 'User is already a technician' });
+      }
+      
+      // Update user to technician
+      fallbackStorage.users[userIndex] = {
+        ...user,
+        role: 'technician',
+        is_technician: true,
+        specialization,
+        dept,
+        contact,
+        status: 'active',
+        openTickets: 0,
+        totalResolved: 0,
+        rating: 0,
+        avgResolutionTime: '2-3 days'
+      };
+      
+      res.json(fallbackStorage.users[userIndex]);
+    }
+  } catch (error) {
+    console.error('Promote user to technician error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Notifications Management APIs
 app.get('/api/admin/notifications', authenticateToken, async (req, res) => {
     try {

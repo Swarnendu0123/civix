@@ -395,6 +395,17 @@ export const adminAPI = {
 
   async getNotificationCounts() {
     return apiRequest('/admin/notification-counts');
+  },
+
+  async promoteUserToTechnician(userId: string, data: {
+    specialization: string;
+    dept: string;
+    contact: string;
+  }) {
+    return apiRequest(`/admin/users/${userId}/promote-to-technician`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
   }
 };
 
