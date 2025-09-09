@@ -232,7 +232,7 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.post('/api/auth/register', async (req, res) => {
     try {
-        const { name, email, password, role = 'citizen' } = req.body;
+        const { name, email, password, role = 'citizen', firebaseUid } = req.body;
         
         if (!name || !email || !password) {
             return res.status(400).json({ error: 'Name, email and password are required' });
@@ -246,9 +246,10 @@ app.post('/api/auth/register', async (req, res) => {
             }
             
             const newUser = new User({
+                _id: firebaseUid || require('uuid').v4(), // Use Firebase UID if provided
                 name,
                 email,
-                password, // Will be hashed by the pre-save middleware
+                password: password === 'firebase-managed' ? 'firebase-managed' : password, // Handle Firebase managed passwords
                 points: 0,
                 issues: [],
                 role
@@ -274,14 +275,15 @@ app.post('/api/auth/register', async (req, res) => {
             }
             
             const newUser = {
-                _id: require('uuid').v4(),
+                _id: firebaseUid || require('uuid').v4(),
                 name,
                 email,
-                password, // In production, this would be hashed
+                password: password === 'firebase-managed' ? 'firebase-managed' : password,
                 points: 0,
                 issues: [],
                 role,
-                is_technician: role === 'technician'
+                is_technician: role === 'technician',
+                createdAt: new Date()
             };
             
             fallbackStorage.users.push(newUser);
@@ -1222,6 +1224,93 @@ app.get('/api/technicians/:id/task-summary', authenticateToken, async (req, res)
         }
     } catch (error) {
         console.error('Get technician task summary error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Promote user to technician endpoint
+app.post('/api/admin/users/:id/promote-technician', authenticateToken, async (req, res) => {
+    try {
+        // Only allow authority to promote users
+        if (req.user.role !== 'authority') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        const { specialization, dept, contact } = req.body;
+        const userId = req.params.id;
+        
+        if (!specialization) {
+            return res.status(400).json({ error: 'Specialization is required' });
+        }
+        
+        if (isConnectedToDB) {
+            const user = await User.findById(userId);
+            if (!user) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+            
+            if (user.role === 'technician') {
+                return res.status(400).json({ error: 'User is already a technician' });
+            }
+            
+            // Update user to technician
+            const updatedUser = await User.findByIdAndUpdate(
+                userId,
+                {
+                    role: 'technician',
+                    is_technician: true,
+                    specialization,
+                    dept: dept || specialization,
+                    contact: contact || user.contact,
+                    status: 'active',
+                    openTickets: 0,
+                    avgResolutionTime: '0 days',
+                    totalResolved: 0,
+                    rating: 0
+                },
+                { new: true }
+            ).select('-password');
+            
+            res.json({
+                message: 'User promoted to technician successfully',
+                user: updatedUser
+            });
+        } else {
+            // Fallback storage operations
+            const userIndex = fallbackStorage.users.findIndex(user => user._id === userId);
+            
+            if (userIndex === -1) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+            
+            const user = fallbackStorage.users[userIndex];
+            if (user.role === 'technician') {
+                return res.status(400).json({ error: 'User is already a technician' });
+            }
+            
+            // Update user to technician
+            fallbackStorage.users[userIndex] = {
+                ...user,
+                role: 'technician',
+                is_technician: true,
+                specialization,
+                dept: dept || specialization,
+                contact: contact || user.contact,
+                status: 'active',
+                openTickets: 0,
+                avgResolutionTime: '0 days',
+                totalResolved: 0,
+                rating: 0
+            };
+            
+            const { password, ...sanitizedUser } = fallbackStorage.users[userIndex];
+            res.json({
+                message: 'User promoted to technician successfully',
+                user: sanitizedUser
+            });
+        }
+    } catch (error) {
+        console.error('Promote user to technician error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

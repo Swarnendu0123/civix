@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { FiEye, FiEdit, FiUsers, FiClock, FiCheckCircle, FiFilter, FiSearch } from 'react-icons/fi';
+import { FiEye, FiEdit, FiUsers, FiClock, FiCheckCircle, FiFilter, FiSearch, FiUserPlus } from 'react-icons/fi';
 import { AddTechnicianModal, ViewTechnicianModal, EditTechnicianModal } from '../components/TechnicianModals';
+import AddTechnicianFromUsersModal from '../components/TechnicianModals/AddTechnicianFromUsersModal';
 import StatCard from '../components/Dashboard/StatCard';
 import api from '../services/api';
 import type { Technician } from '../types';
@@ -9,6 +10,7 @@ const TechnicianManagement: React.FC = () => {
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [selectedTechnician, setSelectedTechnician] = useState<Technician | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAddFromUsersModalOpen, setIsAddFromUsersModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [sortBy, setSortBy] = useState<'rating' | 'avgResolutionTime' | 'openTickets'>('rating');
@@ -81,6 +83,20 @@ const TechnicianManagement: React.FC = () => {
 
   const handleDeleteTechnician = (technicianId: string) => {
     setTechnicians(prev => prev.filter(tech => tech.id !== technicianId));
+  };
+
+  const handlePromoteUserSuccess = () => {
+    // Refresh technicians list after successful promotion
+    const fetchTechnicians = async () => {
+      try {
+        const apiTechnicians = await api.technicians.getTechnicians();
+        const uiTechnicians = apiTechnicians.map(api.transformers.apiTechnicianToUI);
+        setTechnicians(uiTechnicians);
+      } catch (err) {
+        console.error('Error refreshing technicians:', err);
+      }
+    };
+    fetchTechnicians();
   };
 
   // Filtering and sorting logic
@@ -165,13 +181,21 @@ const TechnicianManagement: React.FC = () => {
             Manage technician assignments and track performance
           </p>
         </div>
-        <div className="mt-4 flex md:mt-0 md:ml-4">
+        <div className="mt-4 flex flex-col sm:flex-row gap-3 md:mt-0 md:ml-4">
+          <button
+            type="button"
+            onClick={() => setIsAddFromUsersModalOpen(true)}
+            className="inline-flex items-center px-4 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <FiUserPlus className="mr-2 h-4 w-4" />
+            Add from Users
+          </button>
           <button
             type="button"
             onClick={() => setIsAddModalOpen(true)}
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            Add Technician
+            Add New Technician
           </button>
         </div>
       </div>
@@ -395,6 +419,12 @@ const TechnicianManagement: React.FC = () => {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAdd={handleAddTechnician}
+      />
+
+      <AddTechnicianFromUsersModal
+        isOpen={isAddFromUsersModalOpen}
+        onClose={() => setIsAddFromUsersModalOpen(false)}
+        onPromoteSuccess={handlePromoteUserSuccess}
       />
 
       <ViewTechnicianModal

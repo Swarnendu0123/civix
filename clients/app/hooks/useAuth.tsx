@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { setAuthToken } from '@/services/api';
 import { firebaseAuth } from '@/services/firebase';
+import api from '@/services/api';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -19,7 +20,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Listen for authentication state changes
-    const unsubscribe = firebaseAuth.onAuthStateChanged((firebaseUser) => {
+    const unsubscribe = firebaseAuth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
         // User is logged in
         const userData = {
@@ -29,6 +30,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: 'citizen',
           points: 250 // Default points, would come from backend in real app
         };
+        
+        // SYNC WITH BACKEND: Get user details from MongoDB if available
+        try {
+          // Try to get user profile from backend to get actual role and data
+          const backendUser = await api.user.getProfile();
+          if (backendUser) {
+            // Merge Firebase user with backend data
+            userData.role = backendUser.role || 'citizen';
+            userData.points = backendUser.points || 0;
+            userData.name = backendUser.name || userData.name;
+          }
+        } catch (error) {
+          console.log('Could not fetch user profile from backend, using Firebase data');
+          // If backend is unavailable, use Firebase data as fallback
+        }
         
         setUser(userData);
         setIsAuthenticated(true);
