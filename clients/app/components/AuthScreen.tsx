@@ -17,6 +17,7 @@ import { Colors } from '@/constants/Colors';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { firebaseAuth } from '@/services/firebase';
 import { useAuth } from '@/hooks/useAuth';
+import api from '@/services/api';
 
 interface AuthScreenProps {
   initialMode?: 'signin' | 'signup';
@@ -81,32 +82,91 @@ export default function AuthScreen({ initialMode = 'signin', onClose }: AuthScre
       let result;
       
       if (mode === 'signin') {
-        result = await firebaseAuth.signIn(formData.email, formData.password);
+        // Try backend API first
+        try {
+          result = await api.auth.login(formData.email, formData.password);
+          
+          if (result.user) {
+            login(result.user);
+            Alert.alert(
+              'Success',
+              'Welcome back!',
+              [{ text: 'OK', onPress: onClose }]
+            );
+            return;
+          }
+        } catch (backendError) {
+          console.log('Backend login failed, trying Firebase:', backendError);
+          // Fallback to Firebase
+          const firebaseResult = await firebaseAuth.signIn(formData.email, formData.password);
+          
+          if (firebaseResult.success && firebaseResult.user) {
+            const userData = {
+              _id: firebaseResult.user.uid,
+              name: firebaseResult.user.displayName || formData.email.split('@')[0],
+              email: firebaseResult.user.email,
+              role: 'citizen',
+              points: 0
+            };
+            login(userData);
+            Alert.alert(
+              'Success',
+              'Welcome back!',
+              [{ text: 'OK', onPress: onClose }]
+            );
+            return;
+          }
+          throw new Error(firebaseResult.error || 'Authentication failed');
+        }
       } else {
-        result = await firebaseAuth.signUp(formData.email, formData.password, formData.name);
-      }
-
-      if (result.success && result.user) {
-        // Create user object for the auth context
-        const userData = {
-          _id: result.user.uid,
-          name: result.user.displayName || formData.name,
-          email: result.user.email,
-          role: 'citizen',
-          points: 0
-        };
-
-        login(userData);
-        
-        Alert.alert(
-          'Success',
-          mode === 'signin' ? 'Welcome back!' : 'Account created successfully!',
-          [{ text: 'OK', onPress: onClose }]
-        );
-      } else {
-        Alert.alert('Error', result.error || 'Authentication failed');
+        // Registration - Always use backend API to ensure sync
+        try {
+          result = await api.auth.register(formData.name, formData.email, formData.password, 'citizen');
+          
+          if (result.user) {
+            login(result.user);
+            Alert.alert(
+              'Success',
+              'Account created successfully! You can now report civic issues.',
+              [{ text: 'OK', onPress: onClose }]
+            );
+            return;
+          }
+        } catch (backendError) {
+          console.log('Backend registration failed, trying Firebase:', backendError);
+          // Fallback to Firebase but also try to sync with backend
+          const firebaseResult = await firebaseAuth.signUp(formData.email, formData.password, formData.name);
+          
+          if (firebaseResult.success && firebaseResult.user) {
+            const userData = {
+              _id: firebaseResult.user.uid,
+              name: firebaseResult.user.displayName || formData.name,
+              email: firebaseResult.user.email,
+              role: 'citizen',
+              points: 0
+            };
+            
+            // Try to sync with backend in background (don't block UI on failure)
+            try {
+              await api.auth.register(formData.name, formData.email, 'synced-password', 'citizen');
+              console.log('Successfully synced Firebase user with backend');
+            } catch (syncError) {
+              console.warn('Failed to sync Firebase user with backend:', syncError);
+            }
+            
+            login(userData);
+            Alert.alert(
+              'Success',
+              'Account created successfully!',
+              [{ text: 'OK', onPress: onClose }]
+            );
+            return;
+          }
+          throw new Error(firebaseResult.error || 'Registration failed');
+        }
       }
     } catch (error: any) {
+      console.error('Authentication error:', error);
       Alert.alert('Error', error.message || 'An unexpected error occurred');
     } finally {
       setLoading(false);
