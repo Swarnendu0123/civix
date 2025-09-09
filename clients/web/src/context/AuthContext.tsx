@@ -1,7 +1,13 @@
 import React, { createContext, useState, useEffect } from 'react';
-import api, { setAuthToken } from '../services/api';
+import { 
+  signInWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged,
+  type User as FirebaseUser 
+} from 'firebase/auth';
+import { auth } from '../services/firebase';
 
-export type UserRole = 'admin' | 'department_staff' | 'technician' | 'authority' | 'citizen';
+export type UserRole = 'admin' | 'department_staff' | 'technician';
 
 interface User {
   id: string;
@@ -23,14 +29,11 @@ interface AuthContextType {
 const getRolePermissions = (role: UserRole): string[] => {
   switch (role) {
     case 'admin':
-    case 'authority':
-      return ['manage_issues', 'assign_technicians', 'view_all', 'manage_technicians', 'manage_users'];
+      return ['manage_issues', 'assign_technicians', 'view_all', 'manage_technicians'];
     case 'department_staff':
       return ['view_department_issues', 'update_issues'];
     case 'technician':
       return ['view_assigned_issues', 'update_status', 'upload_proof'];
-    case 'citizen':
-      return ['create_issues', 'view_own_issues'];
     default:
       return [];
   }
@@ -45,44 +48,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is already logged in via stored token
-    const checkStoredAuth = async () => {
-      const token = localStorage.getItem('civix_auth_token');
-      if (token) {
-        setAuthToken(token);
-        try {
-          const profile = await api.user.getProfile();
-          const userData: User = {
-            id: profile._id,
-            name: profile.name,
-            email: profile.email,
-            role: profile.role === 'authority' ? 'admin' : profile.role,
-            permissions: getRolePermissions(profile.role === 'authority' ? 'admin' : profile.role)
-          };
-          setUser(userData);
-        } catch (error) {
-          console.error('Failed to restore session:', error);
-          localStorage.removeItem('civix_auth_token');
-          setAuthToken(null);
-        }
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        // Map Firebase user to our User interface
+        // For now, we'll assume all authenticated users are admins
+        // In a real implementation, you'd fetch user role from your database
+        const userData: User = {
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName || firebaseUser.email || 'Admin User',
+          email: firebaseUser.email || '',
+          role: 'admin', // Default to admin for this implementation
+          permissions: getRolePermissions('admin')
+        };
+        setUser(userData);
+      } else {
+        setUser(null);
       }
       setLoading(false);
-    };
+    });
 
-    checkStoredAuth();
+    return unsubscribe;
   }, []);
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await api.auth.login(email, password);
-      const userData: User = {
-        id: response.user._id,
-        name: response.user.name,
-        email: response.user.email,
-        role: response.user.role === 'authority' ? 'admin' : response.user.role,
-        permissions: getRolePermissions(response.user.role === 'authority' ? 'admin' : response.user.role)
-      };
-      setUser(userData);
+      await signInWithEmailAndPassword(auth, email, password);
+      // User state will be updated by the onAuthStateChanged listener
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -91,8 +82,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      api.auth.logout();
-      setUser(null);
+      await signOut(auth);
+      // User state will be updated by the onAuthStateChanged listener
     } catch (error) {
       console.error('Logout error:', error);
       throw error;

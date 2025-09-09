@@ -1,35 +1,13 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
 // API service for Civix mobile app
-// Load from environment variable or default to localhost
-const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+// load from environment variable or default to localhost
+const API_BASE_URL = process.env.BACKEND_URL || 'http://localhost:8000';
 
 // Simple authentication token storage
 let authToken: string | null = null;
 
-export const setAuthToken = async (token: string | null) => {
+export const setAuthToken = (token: string | null) => {
   authToken = token;
-  try {
-    if (token) {
-      await AsyncStorage.setItem('civix_auth_token', token);
-    } else {
-      await AsyncStorage.removeItem('civix_auth_token');
-    }
-  } catch (error) {
-    console.warn('Failed to store auth token:', error);
-  }
-};
-
-export const getAuthToken = async (): Promise<string | null> => {
-  if (authToken) return authToken;
-  
-  try {
-    authToken = await AsyncStorage.getItem('civix_auth_token');
-    return authToken;
-  } catch (error) {
-    console.warn('Failed to retrieve auth token:', error);
-    return null;
-  }
+  // In a real app, you would store this in secure storage like expo-secure-store
 };
 
 // Helper function to make API requests
@@ -41,10 +19,8 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
     ...options.headers,
   };
 
-  // Get current auth token (checks AsyncStorage if needed)
-  const currentToken = authToken || await getAuthToken();
-  if (currentToken) {
-    headers.Authorization = `Bearer ${currentToken}`;
+  if (authToken) {
+    headers.Authorization = `Bearer ${authToken}`;
   }
 
   const response = await fetch(url, {
@@ -69,7 +45,7 @@ export const authAPI = {
     });
     
     if (response.token) {
-      await setAuthToken(response.token);
+      setAuthToken(response.token);
     }
     
     return response;
@@ -82,14 +58,14 @@ export const authAPI = {
     });
     
     if (response.token) {
-      await setAuthToken(response.token);
+      setAuthToken(response.token);
     }
     
     return response;
   },
 
-  async logout() {
-    await setAuthToken(null);
+  logout() {
+    setAuthToken(null);
   }
 };
 
