@@ -51,10 +51,15 @@ export const authAPI = {
     return response;
   },
 
-  async register(name: string, email: string, password: string, role: string = 'citizen') {
+  async register(name: string, email: string, password: string, role: string = 'citizen', firebaseUid?: string) {
+    const body: any = { name, email, password, role };
+    if (firebaseUid) {
+      body.firebaseUid = firebaseUid;
+    }
+    
     const response = await apiRequest('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ name, email, password, role }),
+      body: JSON.stringify(body),
     });
     
     if (response.token) {

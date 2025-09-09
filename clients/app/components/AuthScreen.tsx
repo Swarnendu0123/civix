@@ -17,6 +17,7 @@ import { Colors } from '@/constants/Colors';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { firebaseAuth } from '@/services/firebase';
 import { useAuth } from '@/hooks/useAuth';
+import api from '@/services/api';
 
 interface AuthScreenProps {
   initialMode?: 'signin' | 'signup';
@@ -95,6 +96,41 @@ export default function AuthScreen({ initialMode = 'signin', onClose }: AuthScre
           role: 'citizen',
           points: 0
         };
+
+        // SYNC WITH BACKEND: Register or login the user in MongoDB database
+        try {
+          if (mode === 'signup') {
+            // For new signups, register the user in backend database
+            await api.auth.register(
+              userData.name,
+              userData.email,
+              'firebase-managed', // Password is managed by Firebase
+              'citizen',
+              result.user.uid // Pass Firebase UID
+            );
+            console.log('User successfully synced with backend database');
+          } else {
+            // For signin, try to login with backend (will fail if user doesn't exist in MongoDB)
+            try {
+              await api.auth.login(userData.email, 'firebase-managed');
+              console.log('User authenticated with backend database');
+            } catch (error) {
+              // If login fails, user might not exist in MongoDB yet, register them
+              console.log('User not found in backend, registering...');
+              await api.auth.register(
+                userData.name,
+                userData.email,
+                'firebase-managed',
+                'citizen',
+                result.user.uid // Pass Firebase UID
+              );
+              console.log('User registered in backend database');
+            }
+          }
+        } catch (backendError) {
+          console.warn('Backend sync failed:', backendError);
+          // Continue with Firebase auth even if backend sync fails
+        }
 
         login(userData);
         

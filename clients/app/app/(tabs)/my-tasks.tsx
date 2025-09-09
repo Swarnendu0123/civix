@@ -14,6 +14,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useAuth } from '@/hooks/useAuth';
+import api from '@/services/api';
 
 export default function MyTasksScreen() {
   const colorScheme = useColorScheme();
@@ -24,8 +25,8 @@ export default function MyTasksScreen() {
   const [assignedTasks, setAssignedTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Check if user is a technician - in real app would come from auth context
-  const isTechnician = user?.role === 'technician' || user?.email?.includes('tech'); // Demo logic
+  // Check if user is a technician - get from backend/auth context
+  const isTechnician = user?.role === 'technician';
 
   useEffect(() => {
     const fetchAssignedTasks = async () => {
@@ -36,20 +37,17 @@ export default function MyTasksScreen() {
       
       setLoading(true);
       try {
-        // In a real app, this would fetch from API based on user ID
-        // For demo, we'll simulate tasks assigned to this user
+        // Fetch tasks from backend API
+        const tasks = await api.technicians.getTechnicianTasks(user._id);
+        const mobileTasks = tasks.map((task: any) => api.transformers.taskToMobileFormat(task));
+        setAssignedTasks(mobileTasks);
+        
+        console.log('Fetched tasks from backend:', mobileTasks.length);
+      } catch (error) {
+        console.log('Failed to fetch assigned tasks from backend, using demo data');
+        // Fallback to demo data if backend is unavailable
         const userAssignedTasks = getSampleAssignedTasks(user.email);
         setAssignedTasks(userAssignedTasks);
-        
-        // TODO: In real implementation, call API to get technician's tasks
-        // const response = await fetch(`/api/technicians/${user.id}/tasks`, {
-        //   headers: { Authorization: `Bearer ${user.token}` }
-        // });
-        // const tasks = await response.json();
-        // setAssignedTasks(tasks);
-      } catch (error) {
-        console.log('Failed to fetch assigned tasks');
-        setAssignedTasks([]);
       } finally {
         setLoading(false);
       }
