@@ -1,6 +1,6 @@
 // API service for Civix mobile app
 // load from environment variable or default to localhost
-const API_BASE_URL = process.env.BACKEND_URL || 'http://localhost:3000';
+const API_BASE_URL = process.env.BACKEND_URL || 'http://localhost:8000';
 
 // Simple user storage for this implementation (no JWT tokens in server)
 let currentUser: any = null;
