@@ -249,4 +249,57 @@ router.put('/update/:id', async (req, res) => {
   }
 });
 
+// GET /api/ticket/:id - Get single ticket by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find ticket by ID
+    const ticket = await Ticket.findById(id);
+    if (!ticket) {
+      return res.status(404).json({ 
+        error: 'Ticket not found' 
+      });
+    }
+
+    // Get creator details
+    let creator = null;
+    if (ticket.creator_id) {
+      creator = await User.findOne({ email: ticket.creator_id });
+    }
+
+    // Get authority details if assigned
+    let authority = null;
+    if (ticket.authority) {
+      authority = await User.findOne({ email: ticket.authority });
+    }
+
+    // Prepare response with populated data
+    const ticketResponse = {
+      ...ticket.toObject(),
+      creator: creator ? {
+        _id: creator._id,
+        name: creator.name,
+        email: creator.email
+      } : null,
+      authority: authority ? {
+        _id: authority._id,
+        name: authority.name,
+        email: authority.email
+      } : null
+    };
+
+    res.json({
+      message: 'Ticket retrieved successfully',
+      ticket: ticketResponse
+    });
+
+  } catch (error) {
+    console.error('Error fetching ticket:', error);
+    res.status(500).json({ 
+      error: 'Internal server error' 
+    });
+  }
+});
+
 module.exports = router;

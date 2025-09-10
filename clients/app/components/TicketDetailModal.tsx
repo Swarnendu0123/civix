@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColor } from '@/hooks/useThemeColor';
@@ -53,6 +54,7 @@ interface TicketDetailModalProps {
   onClose: () => void;
   onVote?: (ticketId: string, voteType: 'upvote' | 'downvote') => void;
   currentUserId?: string;
+  loading?: boolean;
 }
 
 const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
@@ -60,6 +62,7 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
   ticket,
   onClose,
   onVote,
+  loading = false,
 }) => {
   const { isDark } = useTheme();
   
@@ -156,15 +159,24 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Status and Urgency Row */}
-          <View style={styles.statusRow}>
-            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(ticket.status) }]}>
-              <Text style={styles.statusText}>{ticket.status?.toUpperCase() || 'UNKNOWN'}</Text>
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={tintColor} />
+              <Text style={[styles.loadingText, { color: textColor }]}>
+                Loading ticket details...
+              </Text>
             </View>
-            <View style={[styles.urgencyBadge, { backgroundColor: getUrgencyColor(ticket.urgency) }]}>
-              <Text style={styles.urgencyText}>{ticket.urgency?.toUpperCase() || 'LOW'}</Text>
-            </View>
-          </View>
+          ) : ticket ? (
+            <>
+              {/* Status and Urgency Row */}
+              <View style={styles.statusRow}>
+                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(ticket.status) }]}>
+                  <Text style={styles.statusText}>{ticket.status?.toUpperCase() || 'UNKNOWN'}</Text>
+                </View>
+                <View style={[styles.urgencyBadge, { backgroundColor: getUrgencyColor(ticket.urgency) }]}>
+                  <Text style={styles.urgencyText}>{ticket.urgency?.toUpperCase() || 'LOW'}</Text>
+                </View>
+              </View>
 
           {/* Issue Title */}
           <Text style={[styles.issueTitle, { color: textColor }]}>
@@ -308,8 +320,16 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
             </View>
           </View>
 
-          {/* Bottom spacing */}
-          <View style={styles.bottomSpacing} />
+              {/* Bottom spacing */}
+              <View style={styles.bottomSpacing} />
+            </>
+          ) : (
+            <View style={styles.errorContainer}>
+              <Text style={[styles.errorText, { color: textColor }]}>
+                No ticket data available
+              </Text>
+            </View>
+          )}
         </ScrollView>
       </View>
     </Modal>
@@ -489,6 +509,27 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 40,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  errorText: {
+    fontSize: 16,
+    textAlign: 'center',
   },
 });
 

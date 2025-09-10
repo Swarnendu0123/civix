@@ -14,7 +14,7 @@ import { Colors } from "@/constants/Colors";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { useAuth } from "@/hooks/useAuth";
 import { router } from "expo-router";
-import api from "@/services/api";
+import api, { ticketsAPI } from "@/services/api";
 import TicketDetailModal from "@/components/TicketDetailModal";
 
 export default function HomeScreen() {
@@ -29,6 +29,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [fetchingTicketDetails, setFetchingTicketDetails] = useState(false);
 
   useEffect(() => {
     const fetchHomeData = async () => {
@@ -87,14 +88,58 @@ export default function HomeScreen() {
     router.push("/raise-issue");
   };
 
-  const handleTicketPress = (ticket: any) => {
-    setSelectedTicket(ticket);
-    setModalVisible(true);
+  const handleTicketPress = async (ticket: any) => {
+    try {
+      setFetchingTicketDetails(true);
+      setModalVisible(true);
+      
+      // Fetch fresh ticket details from the server
+      const freshTicketResponse = await ticketsAPI.getTicket(ticket._id);
+      console.log('Fresh ticket data:', freshTicketResponse.ticket);
+      setSelectedTicket(freshTicketResponse.ticket);
+    } catch (error) {
+      console.error('Failed to fetch ticket details:', error);
+      // Fallback to the ticket data we have
+      setSelectedTicket(ticket);
+      Alert.alert('Warning', 'Could not load latest ticket details. Showing cached data.');
+    } finally {
+      setFetchingTicketDetails(false);
+    }
   };
 
   const handleCloseModal = () => {
     setModalVisible(false);
     setSelectedTicket(null);
+  };
+
+  const handleVote = async (ticketId: string, voteType: 'upvote' | 'downvote') => {
+    if (!user?.email) {
+      Alert.alert('Error', 'You must be logged in to vote');
+      return;
+    }
+
+    try {
+      // For now, just update the vote count locally as server might not be available
+      if (selectedTicket && typeof selectedTicket === 'object') {
+        const currentVotes = (selectedTicket as any).votes || { upvotes: 0, downvotes: 0 };
+        const updatedTicket = {
+          ...(selectedTicket as any),
+          votes: {
+            upvotes: voteType === 'upvote' ? 
+              currentVotes.upvotes + 1 : 
+              currentVotes.upvotes,
+            downvotes: voteType === 'downvote' ? 
+              currentVotes.downvotes + 1 : 
+              currentVotes.downvotes
+          }
+        };
+        setSelectedTicket(updatedTicket);
+        Alert.alert('Success', `Ticket ${voteType}d successfully! (Demo mode)`);
+      }
+    } catch (error) {
+      console.error('Failed to vote:', error);
+      Alert.alert('Error', 'Failed to submit vote. Please try again.');
+    }
   };
 
   const styles = createStyles(colorScheme);
@@ -196,7 +241,9 @@ export default function HomeScreen() {
         visible={modalVisible}
         ticket={selectedTicket}
         onClose={handleCloseModal}
-        currentUserId={user.id}
+        currentUserId={user?.email}
+        loading={fetchingTicketDetails}
+        onVote={handleVote}
       />
     </SafeAreaView>
   );
