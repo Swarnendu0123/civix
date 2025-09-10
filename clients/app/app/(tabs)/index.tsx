@@ -220,17 +220,6 @@ export default function HomeScreen() {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
-        {/* Civix Points */}
-        <View style={styles.pointsCard}>
-          <View style={styles.pointsHeader}>
-            <IconSymbol name="star.fill" size={24} color="#F59E0B" />
-            <Text style={styles.pointsTitle}>Civix Points</Text>
-          </View>
-          <Text style={styles.pointsValue}>{user.points}</Text>
-          <Text style={styles.pointsSubtext}>
-            Keep reporting tickets to earn more points!
-          </Text>
-        </View>
 
         {/* Action Buttons */}
         <View style={styles.actionSection}>
