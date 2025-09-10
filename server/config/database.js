@@ -10,7 +10,7 @@ const connectDB = async () => {
             // Mongoose 6+ no longer needs these options as they are defaults
             // useNewUrlParser: true,
             // useUnifiedTopology: true,
-            serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+            serverSelectionTimeoutMS: 10000, // Timeout after 5s instead of 30s
         });
 
         console.log(`MongoDB Connected: ${conn.connection.host}`);
