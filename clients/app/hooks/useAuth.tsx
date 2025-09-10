@@ -62,48 +62,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return unsubscribe;
   }, []);
 
-    // Comment out Firebase auth for demo
-    // const unsubscribe = firebaseAuth.onAuthStateChanged(async (firebaseUser) => {
-    //   if (firebaseUser) {
-    //     // User is logged in
-    //     const userData = {
-    //       _id: firebaseUser.uid,
-    //       name: firebaseUser.displayName || 'User',
-    //       email: firebaseUser.email,
-    //       role: 'citizen',
-    //       points: 250 // Default points, would come from backend in real app
-    //     };
-    //     
-    //     // SYNC WITH BACKEND: Get user details from MongoDB if available
-    //     try {
-    //       // Try to get user profile from backend to get actual role and data
-    //       const backendUser = await api.user.getProfile();
-    //       if (backendUser) {
-    //         // Merge Firebase user with backend data
-    //         userData.role = backendUser.role || 'citizen';
-    //         userData.points = backendUser.points || 0;
-    //         userData.name = backendUser.name || userData.name;
-    //       }
-    //     } catch (error) {
-    //       console.log('Could not fetch user profile from backend, using Firebase data');
-    //       // If backend is unavailable, use Firebase data as fallback
-    //     }
-    //     
-    //     setUser(userData);
-    //     setIsAuthenticated(true);
-    //     setAuthToken(firebaseUser.uid);
-    //   } else {
-    //     // User is logged out
-    //     setUser(null);
-    //     setIsAuthenticated(false);
-    //     setAuthToken(null);
-    //   }
-    //   setLoading(false);
-    // });
-
-    // return unsubscribe;
-  }, []);
-
   const login = (userData: any) => {
     setUser(userData);
     setIsAuthenticated(true);
