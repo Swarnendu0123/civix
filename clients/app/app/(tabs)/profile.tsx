@@ -31,7 +31,7 @@ export default function ProfileScreen() {
       $date: "2025-09-10T13:44:14.769Z",
     },
   });
-  const [editModalVisible, setEditModalVisible] = useState(true);
+  const [editModalVisible, setEditModalVisible] = useState(false);
 
   useEffect(() => {
     const fetchUserDetailsUtil = async () => {
