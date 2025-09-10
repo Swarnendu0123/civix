@@ -236,11 +236,15 @@ export const ticketsAPI = {
       return await apiRequest(`/api/ticket/${id}`);
     } catch (error) {
       console.warn('Server not available, using mock data');
-      // Mock data matching the database structure you provided
+      // Mock data matching the corrected server response structure with populated fields
       return {
         ticket: {
           _id: id,
-          creator_id: "shuvradeepbera2005@gmail.com",
+          creator_id: {
+            _id: "66f8b123456789012345abcd",
+            name: "Shuvradeep Bera",
+            email: "shuvradeepbera2005@gmail.com"
+          },
           creator_name: "Shuvradeep Bera",
           status: "open",
           issue_name: "Water Pipeline Issue - Test",
@@ -254,11 +258,16 @@ export const ticketsAPI = {
           },
           urgency: "critical",
           location: {
-            latitude: 22.3215693,
-            longitude: 87.3017214,
+            latitude: 22.321569,
+            longitude: 87.301721,
           },
           closing_time: null,
-          authority: null,
+          authority: {
+            _id: "66f8b987654321098765dcba",
+            name: "Municipal Water Department",
+            email: "water.dept@citycouncil.gov",
+            role: "authority"
+          },
           opening_time: "2025-09-10T10:06:59.490Z",
           createdAt: "2025-09-10T10:06:59.500Z",
           updatedAt: "2025-09-10T10:06:59.500Z",

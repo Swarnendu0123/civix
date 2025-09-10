@@ -254,44 +254,20 @@ router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Find ticket by ID
-    const ticket = await Ticket.findById(id);
+    // Find ticket by ID with populated creator and authority data
+    const ticket = await Ticket.findById(id)
+      .populate('creator_id', 'email name')
+      .populate('authority', 'email name role');
+
     if (!ticket) {
       return res.status(404).json({ 
         error: 'Ticket not found' 
       });
     }
 
-    // Get creator details
-    let creator = null;
-    if (ticket.creator_id) {
-      creator = await User.findOne({ email: ticket.creator_id });
-    }
-
-    // Get authority details if assigned
-    let authority = null;
-    if (ticket.authority) {
-      authority = await User.findOne({ email: ticket.authority });
-    }
-
-    // Prepare response with populated data
-    const ticketResponse = {
-      ...ticket.toObject(),
-      creator: creator ? {
-        _id: creator._id,
-        name: creator.name,
-        email: creator.email
-      } : null,
-      authority: authority ? {
-        _id: authority._id,
-        name: authority.name,
-        email: authority.email
-      } : null
-    };
-
     res.json({
       message: 'Ticket retrieved successfully',
-      ticket: ticketResponse
+      ticket: ticket
     });
 
   } catch (error) {
