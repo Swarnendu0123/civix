@@ -19,11 +19,11 @@ export default function ProfileScreen() {
   const { colorScheme } = useTheme();
   const { user, logout } = useAuth();
   const [userdetails, setUserDetails] = useState({
-    email: "swarnendu317@gmail.com",
-    name: "Swarnendu",
-    phone: null,
-    address: null,
-    location: null,
+    email: "",
+    name: "",
+    phone: "",
+    address: "",
+    location: "",
     role: "user",
     isTechnician: false,
     points: 10,
@@ -31,15 +31,13 @@ export default function ProfileScreen() {
       $date: "2025-09-10T13:44:14.769Z",
     },
   });
-  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(true);
 
   useEffect(() => {
     const fetchUserDetailsUtil = async () => {
       try {
         const response = await fetchUserDetails(user.email);
         console.log(response);
-
-
 
         setUserDetails(response.user);
       } catch (error) {
@@ -132,7 +130,9 @@ export default function ProfileScreen() {
               <Text style={styles.technicianLabel}>Technician</Text>
             )}
             <Text style={styles.userEmail}>{user.email}</Text>
-            {user.phone && <Text style={styles.userPhone}>{userdetails.phone}</Text>}
+            {user.phone && (
+              <Text style={styles.userPhone}>{userdetails.phone}</Text>
+            )}
             {userdetails.address && (
               <Text style={styles.userLocation}>
                 <IconSymbol
@@ -147,6 +147,18 @@ export default function ProfileScreen() {
               Member since {formatJoinDate(user.createdAt)}
             </Text>
           </View>
+        </View>
+
+        {/* Edit Button */}
+        <View>
+          <TouchableOpacity onPress={handleEditProfile}>
+            <IconSymbol name="arrow.right.square" size={24} color="#EF4444" />
+            <Text
+              style={[styles.logoutText, { color: Colors[colorScheme].tint }]}
+            >
+              Edit
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Profile Details */}
@@ -201,7 +213,9 @@ export default function ProfileScreen() {
               />
               <Text style={styles.detailLabel}>Address</Text>
             </View>
-            <Text style={styles.detailValue}>{userdetails.address || "Not set"}</Text>
+            <Text style={styles.detailValue}>
+              {userdetails.address || "Not set"}
+            </Text>
           </View>
 
           <View style={styles.detailRow}>
