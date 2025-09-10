@@ -71,6 +71,7 @@ router.post("/register", async (req, res) => {
   }
 });
 
+
 // PUT /api/user/update/details/:email - Update user details
 router.put("/update/details/:email", async (req, res) => {
   try {

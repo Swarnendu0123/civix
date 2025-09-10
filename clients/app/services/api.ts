@@ -249,6 +249,10 @@ export const healthAPI = {
   },
 };
 
+export const fetchUserDetails = async (current_user_email: string) => {
+  return apiRequest("/api/user/profile/" + current_user_email);
+};
+
 // Legacy Analytics API (server doesn't implement these yet)
 export const analyticsAPI = {
   async getAnalytics() {
@@ -368,81 +372,6 @@ export const ticketsAPI = {
   },
 };
 
-// Technicians API (limited functionality without full server implementation)
-export const techniciansAPI = {
-  async getTechnicians() {
-    // Get users with technician role from tickets
-    const tickets = await ticketsAPI.getTickets();
-    const allTickets = tickets.tickets || [];
-
-    // Extract unique authorities/technicians
-    const technicians = allTickets
-      .filter((t: any) => t.authority)
-      .map((t: any) => t.authority)
-      .filter(
-        (tech: any, index: number, arr: any[]) =>
-          arr.findIndex((t) => t._id === tech._id) === index
-      );
-
-    return { technicians };
-  },
-
-  async getTechnician(id: string) {
-    const techList = await this.getTechnicians();
-    const technician = techList.technicians.find((t: any) => t._id === id);
-    if (!technician) {
-      throw new Error("Technician not found");
-    }
-    return { technician };
-  },
-
-  async getTechnicianTasks(id: string, status?: string) {
-    const tickets = await ticketsAPI.getTickets();
-    const allTickets = tickets.tickets || [];
-
-    let tasks = allTickets.filter(
-      (t: any) => t.authority && t.authority._id === id
-    );
-
-    if (status) {
-      tasks = tasks.filter((t: any) => t.status === status);
-    }
-
-    return { tasks };
-  },
-};
-
-// File upload API (server doesn't implement this yet)
-export const uploadAPI = {
-  async uploadFile(file: File | any) {
-    // For now, return a mock URL since server doesn't implement file upload
-    // In production, you'd implement file upload on the server
-    const filename = file.name || `image_${Date.now()}.jpg`;
-
-    // For React Native, we might get a URI instead of File object
-    if (typeof file === "string") {
-      return {
-        url: file, // Use the local URI directly
-        filename: filename,
-        size: 0,
-      };
-    }
-
-    return {
-      url: file.uri || `data:image/jpeg;base64,${await fileToBase64(file)}`,
-      filename: filename,
-      size: file.size || 0,
-    };
-  },
-};
-
-// Helper function to convert file to base64 (for React Native)
-const fileToBase64 = async (file: any): Promise<string> => {
-  // This would need to be implemented using react-native file system
-  // For now, return empty string
-  return "";
-};
-
 // Utility functions to transform data for mobile app format
 export const transformers = {
   // Transform API ticket to mobile app format
@@ -519,8 +448,6 @@ export default {
   health: healthAPI,
   analytics: analyticsAPI,
   tickets: ticketsAPI,
-  technicians: techniciansAPI,
-  upload: uploadAPI,
   transformers,
   // Helper functions
   setCurrentUser,
