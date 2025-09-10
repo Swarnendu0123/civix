@@ -1,6 +1,6 @@
 # Database Schema Overview
 
-Civix uses MongoDB as its primary database, with carefully designed schemas to support efficient civic issue management. The database architecture emphasizes performance, scalability, and data integrity.
+Civix uses MongoDB as its primary database, with carefully designed schemas to support efficient civic ticket management. The database architecture emphasizes performance, scalability, and data integrity.
 
 ## Database Architecture
 
@@ -21,8 +21,8 @@ erDiagram
         boolean is_technician
         string specialization
         number points
-        array issues
-        array issues_assigned
+        array tickets
+        array tickets_assigned
         array pulls_created
         date created_at
         date updated_at
@@ -33,9 +33,9 @@ erDiagram
         string creator_id FK
         string creator_name
         string status
-        string issue_name
-        string issue_category
-        string issue_description
+        string ticket_name
+        string ticket_category
+        string ticket_description
         string image_url
         array tags
         object votes
@@ -54,7 +54,7 @@ erDiagram
         string password
         string name
         object location
-        array issues
+        array tickets
         array technicians
         string role
         date created_at
@@ -81,7 +81,7 @@ erDiagram
 | Collection | Purpose | Document Count (Typical) |
 |------------|---------|-------------------------|
 | `users` | Citizens, technicians, admins | 10,000 - 100,000+ |
-| `tickets` | Reported civic issues | 1,000 - 50,000+ |
+| `tickets` | Reported civic tickets | 1,000 - 50,000+ |
 | `authorities` | City departments | 10 - 100 |
 | `resolverequests` | Resolution submissions | 500 - 10,000+ |
 
@@ -102,7 +102,7 @@ erDiagram
   
   // Citizen fields
   points: Number,           // Gamification points
-  issues: [ObjectId],       // References to created tickets
+  tickets: [ObjectId],       // References to created tickets
   
   // Technician fields
   specialization: String,   // "Electrician", "Plumber", etc.
@@ -113,7 +113,7 @@ erDiagram
   status: String,           // "active" | "inactive" | "on_site"
   totalResolved: Number,    // Completed tickets count
   rating: Number,           // User rating (1-5)
-  issues_assigned: [ObjectId], // Assigned tickets
+  tickets_assigned: [ObjectId], // Assigned tickets
   pulls_created: [ObjectId],   // Resolve requests created
   
   // Metadata
@@ -124,7 +124,7 @@ erDiagram
 
 ### Ticket Schema
 **Collection**: `tickets`  
-**Purpose**: Stores all reported civic issues
+**Purpose**: Stores all reported civic tickets
 
 ```javascript
 {
@@ -133,10 +133,10 @@ erDiagram
   creator_name: String,     // Cached creator name
   status: String,           // "open" | "in_process" | "resolved"
   
-  // Issue details
-  issue_name: String,       // Brief title
-  issue_category: String,   // "Water", "Electric issue", etc.
-  issue_description: String, // Detailed description
+  // ticket details
+  ticket_name: String,       // Brief title
+  ticket_category: String,   // "Water", "Electric ticket", etc.
+  ticket_description: String, // Detailed description
   image_url: String,        // Photo evidence URL
   tags: [String],           // Searchable tags
   
@@ -157,8 +157,8 @@ erDiagram
   },
   
   // Lifecycle
-  opening_time: Date,       // When issue was reported
-  closing_time: Date,       // When issue was resolved
+  opening_time: Date,       // When ticket was reported
+  closing_time: Date,       // When ticket was resolved
   
   // Assignment
   authority: ObjectId,      // Reference to Authority
@@ -193,7 +193,7 @@ erDiagram
   },
   
   // Managed resources
-  issues: [ObjectId],       // Tickets under jurisdiction
+  tickets: [ObjectId],       // Tickets under jurisdiction
   technicians: [ObjectId], // Assigned technicians
   
   // Metadata
@@ -254,7 +254,7 @@ db.tickets.createIndex({ "location.coordinates": "2dsphere" })
 db.tickets.createIndex({ status: 1, opening_time: -1 })
 
 // Category and urgency filtering
-db.tickets.createIndex({ issue_category: 1, urgency: 1 })
+db.tickets.createIndex({ ticket_category: 1, urgency: 1 })
 
 // Assignment tracking
 db.tickets.createIndex({ assigned_technician: 1, status: 1 })
@@ -265,10 +265,10 @@ db.tickets.createIndex({ creator_id: 1, opening_time: -1 })
 // Authority management
 db.tickets.createIndex({ authority: 1, status: 1 })
 
-// Full-text search on issue content
+// Full-text search on ticket content
 db.tickets.createIndex({ 
-  issue_name: "text", 
-  issue_description: "text", 
+  ticket_name: "text", 
+  ticket_description: "text", 
   tags: "text" 
 })
 ```

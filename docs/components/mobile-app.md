@@ -1,6 +1,6 @@
 # Mobile App Component
 
-The Civix Mobile App is a React Native application built with Expo, designed for citizens to easily report civic issues and track their resolution. The app provides an intuitive interface for capturing issues with photos and location data while keeping users informed about progress.
+The Civix Mobile App is a React Native application built with Expo, designed for citizens to easily report civic tickets and track their resolution. The app provides an intuitive interface for capturing tickets with photos and location data while keeping users informed about progress.
 
 ## Overview
 
@@ -15,13 +15,13 @@ The Civix Mobile App is a React Native application built with Expo, designed for
 - **Storage**: AsyncStorage 2.2.0
 
 ### Key Features
-- **Issue Reporting**: Camera integration with GPS location
+- **ticket Reporting**: Camera integration with GPS location
 - **Photo Capture**: High-quality image capture and gallery selection
-- **Real-time Tracking**: Live updates on issue status
+- **Real-time Tracking**: Live updates on ticket status
 - **User Authentication**: Secure login and registration
 - **Offline Support**: Basic functionality without internet
 - **Push Notifications**: Real-time alerts and updates
-- **Map Integration**: View issues on interactive maps
+- **Map Integration**: View tickets on interactive maps
 
 ## Project Structure
 
@@ -31,8 +31,8 @@ clients/app/
 │   ├── (tabs)/            # Tab navigation routes
 │   │   ├── index.tsx      # Home screen
 │   │   ├── map.tsx        # Map view
-│   │   ├── raise-issue.tsx # Issue reporting
-│   │   ├── my-tickets.tsx  # User's issues
+│   │   ├── raise-ticket.tsx # ticket reporting
+│   │   ├── my-tickets.tsx  # User's tickets
 │   │   ├── my-tasks.tsx    # Technician tasks
 │   │   └── profile.tsx     # User profile
 │   ├── _layout.tsx        # Root layout
@@ -97,7 +97,7 @@ import { ScrollView, View, Text } from 'react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { WelcomeCard } from '@/components/WelcomeCard';
 import { QuickActions } from '@/components/QuickActions';
-import { RecentIssues } from '@/components/RecentIssues';
+import { Recenttickets } from '@/components/Recenttickets';
 
 export default function HomeScreen() {
   const { user } = useAuth();
@@ -107,7 +107,7 @@ export default function HomeScreen() {
       <View className="p-4">
         <WelcomeCard user={user} />
         <QuickActions />
-        <RecentIssues />
+        <Recenttickets />
       </View>
     </ScrollView>
   );
@@ -116,44 +116,44 @@ export default function HomeScreen() {
 
 **Features**:
 - Welcome message with user's name
-- Quick action buttons (Report Issue, View Map, etc.)
-- Recent issues overview
+- Quick action buttons (Report ticket, View Map, etc.)
+- Recent tickets overview
 - Community statistics
 - Important announcements
 
-### Issue Reporting Screen
-**Location**: `app/(tabs)/raise-issue.tsx`
+### ticket Reporting Screen
+**Location**: `app/(tabs)/raise-ticket.tsx`
 
-Comprehensive issue reporting with camera integration and location services.
+Comprehensive ticket reporting with camera integration and location services.
 
 ```typescript
 import React, { useState } from 'react';
 import { View, ScrollView, Alert } from 'react-native';
 import { CameraView } from '@/components/camera/CameraView';
 import { LocationPicker } from '@/components/LocationPicker';
-import { IssueForm } from '@/components/forms/IssueForm';
+import { ticketForm } from '@/components/forms/ticketForm';
 import { useLocation } from '@/hooks/useLocation';
 import { useCamera } from '@/hooks/useCamera';
 
-export default function RaiseIssueScreen() {
+export default function Raiseticketscreen() {
   const [photos, setPhotos] = useState<string[]>([]);
-  const [formData, setFormData] = useState<IssueFormData>({});
+  const [formData, setFormData] = useState<ticketFormData>({});
   
   const { location, requestPermission } = useLocation();
   const { capturePhoto, selectFromGallery } = useCamera();
   
   const handleSubmit = async () => {
     try {
-      await submitIssue({
+      await submitticket({
         ...formData,
         photos,
         location
       });
       
-      Alert.alert('Success', 'Issue reported successfully!');
+      Alert.alert('Success', 'ticket reported successfully!');
       // Navigate back or reset form
     } catch (error) {
-      Alert.alert('Error', 'Failed to submit issue');
+      Alert.alert('Error', 'Failed to submit ticket');
     }
   };
   
@@ -171,7 +171,7 @@ export default function RaiseIssueScreen() {
           onLocationChange={setLocation}
         />
         
-        <IssueForm 
+        <ticketForm 
           data={formData}
           onChange={setFormData}
           onSubmit={handleSubmit}
@@ -185,15 +185,15 @@ export default function RaiseIssueScreen() {
 ### Map Screen
 **Location**: `app/(tabs)/map.tsx`
 
-Interactive map showing community issues and user location.
+Interactive map showing community tickets and user location.
 
 ```typescript
 import React, { useState, useEffect } from 'react';
 import { View } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
-import { useIssues } from '@/hooks/useIssues';
+import { usetickets } from '@/hooks/usetickets';
 import { useLocation } from '@/hooks/useLocation';
-import { IssueMarker } from '@/components/map/IssueMarker';
+import { ticketMarker } from '@/components/map/ticketMarker';
 import { MapFilters } from '@/components/map/MapFilters';
 
 export default function MapScreen() {
@@ -201,7 +201,7 @@ export default function MapScreen() {
   const [filters, setFilters] = useState<MapFilters>({});
   
   const { location } = useLocation();
-  const { issues } = useIssues(filters);
+  const { tickets } = usetickets(filters);
   
   useEffect(() => {
     if (location) {
@@ -223,11 +223,11 @@ export default function MapScreen() {
         showsUserLocation
         showsMyLocationButton
       >
-        {issues.map((issue) => (
-          <IssueMarker
-            key={issue.id}
-            issue={issue}
-            onPress={() => navigateToIssue(issue.id)}
+        {tickets.map((ticket) => (
+          <ticketMarker
+            key={ticket.id}
+            ticket={ticket}
+            onPress={() => navigateToticket(ticket.id)}
           />
         ))}
       </MapView>
@@ -244,24 +244,24 @@ export default function MapScreen() {
 ### My Tickets Screen
 **Location**: `app/(tabs)/my-tickets.tsx`
 
-Personal issue tracking and management interface.
+Personal ticket tracking and management interface.
 
 ```typescript
 import React, { useState } from 'react';
 import { FlatList, View } from 'react-native';
-import { useUserIssues } from '@/hooks/useUserIssues';
-import { IssueCard } from '@/components/IssueCard';
+import { useUsertickets } from '@/hooks/useUsertickets';
+import { ticketCard } from '@/components/ticketCard';
 import { StatusFilter } from '@/components/StatusFilter';
 import { EmptyState } from '@/components/EmptyState';
 
 export default function MyTicketsScreen() {
-  const [statusFilter, setStatusFilter] = useState<IssueStatus | 'all'>('all');
-  const { issues, loading, refetch } = useUserIssues(statusFilter);
+  const [statusFilter, setStatusFilter] = useState<ticketstatus | 'all'>('all');
+  const { tickets, loading, refetch } = useUsertickets(statusFilter);
   
-  const renderIssue = ({ item }: { item: Issue }) => (
-    <IssueCard 
-      issue={item}
-      onPress={() => navigateToIssueDetail(item.id)}
+  const renderticket = ({ item }: { item: ticket }) => (
+    <ticketCard 
+      ticket={item}
+      onPress={() => navigateToticketDetail(item.id)}
     />
   );
   
@@ -273,18 +273,18 @@ export default function MyTicketsScreen() {
       />
       
       <FlatList
-        data={issues}
-        renderItem={renderIssue}
+        data={tickets}
+        renderItem={renderticket}
         keyExtractor={(item) => item.id}
         refreshing={loading}
         onRefresh={refetch}
         contentContainerStyle={{ padding: 16 }}
         ListEmptyComponent={
           <EmptyState 
-            title="No issues reported"
-            subtitle="Start by reporting your first civic issue"
-            action="Report Issue"
-            onActionPress={() => navigateToRaiseIssue()}
+            title="No tickets reported"
+            subtitle="Start by reporting your first civic ticket"
+            action="Report ticket"
+            onActionPress={() => navigateToRaiseticket()}
           />
         }
       />
@@ -502,7 +502,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
                 latitude: location.latitude,
                 longitude: location.longitude,
               }}
-              title="Issue Location"
+              title="ticket Location"
             />
           </MapView>
           
@@ -730,7 +730,7 @@ export default function TabLayout() {
       />
       
       <Tabs.Screen
-        name="raise-issue"
+        name="raise-ticket"
         options={{
           title: 'Report',
           tabBarIcon: ({ color }) => (
@@ -742,7 +742,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="my-tickets"
         options={{
-          title: 'My Issues',
+          title: 'My tickets',
           tabBarIcon: ({ color }) => (
             <TabBarIcon name="list" color={color} />
           ),
@@ -841,4 +841,4 @@ eas submit --platform android
 eas submit --platform ios
 ```
 
-The Mobile App provides an intuitive interface for citizens to engage with their local government and contribute to community improvement through efficient issue reporting and tracking.
+The Mobile App provides an intuitive interface for citizens to engage with their local government and contribute to community improvement through efficient ticket reporting and tracking.

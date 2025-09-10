@@ -1,6 +1,6 @@
 # Web Client Component
 
-The Civix Web Client is a React-based administrative dashboard designed for city officials, administrators, and supervisors to manage civic issues efficiently. Built with modern technologies, it provides a comprehensive interface for issue tracking, team management, and analytics.
+The Civix Web Client is a React-based administrative dashboard designed for city officials, administrators, and supervisors to manage civic tickets efficiently. Built with modern technologies, it provides a comprehensive interface for ticket tracking, team management, and analytics.
 
 ## Overview
 
@@ -16,8 +16,8 @@ The Civix Web Client is a React-based administrative dashboard designed for city
 
 ### Key Features
 - **Interactive Dashboard**: Real-time metrics and analytics
-- **Issue Management**: Comprehensive ticket tracking and assignment
-- **Geographic Visualization**: Interactive maps with issue clustering
+- **ticket Management**: Comprehensive ticket tracking and assignment
+- **Geographic Visualization**: Interactive maps with ticket clustering
 - **Team Management**: Technician oversight and performance tracking
 - **Advanced Analytics**: Reporting and trend analysis
 - **User Management**: Role-based access control
@@ -34,7 +34,7 @@ clients/web/
 │   │   └── maps/           # Map-related components
 │   ├── pages/              # Route components
 │   │   ├── Dashboard/      # Main dashboard
-│   │   ├── Issues/         # Issue management
+│   │   ├── tickets/         # ticket management
 │   │   ├── Analytics/      # Reports and analytics
 │   │   ├── Team/           # Team management
 │   │   └── Settings/       # Configuration
@@ -95,7 +95,7 @@ npm run lint
 ### Dashboard Component
 **Location**: `src/pages/Dashboard/Dashboard.tsx`
 
-The main dashboard provides an overview of all civic issues and system metrics.
+The main dashboard provides an overview of all civic tickets and system metrics.
 
 ```typescript
 interface DashboardProps {
@@ -104,14 +104,14 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = () => {
   const [metrics, setMetrics] = useState<DashboardMetrics>();
-  const [issues, setIssues] = useState<Issue[]>([]);
+  const [tickets, settickets] = useState<ticket[]>([]);
   
   // Dashboard logic
   
   return (
     <div className="dashboard-container">
       <MetricsOverview metrics={metrics} />
-      <IssueMap issues={issues} />
+      <ticketMap tickets={tickets} />
       <RecentActivity />
       <PerformanceCharts />
     </div>
@@ -121,33 +121,33 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
 **Features**:
 - Real-time metrics display
-- Interactive issue map
+- Interactive ticket map
 - Recent activity feed
 - Performance analytics charts
 - Quick action buttons
 
-### Issue Management
-**Location**: `src/pages/Issues/`
+### ticket Management
+**Location**: `src/pages/tickets/`
 
-Comprehensive issue tracking and management interface.
+Comprehensive ticket tracking and management interface.
 
-#### IssueList Component
+#### ticketList Component
 ```typescript
-interface IssueListProps {
-  filters: IssueFilters;
-  onIssueSelect: (issue: Issue) => void;
+interface ticketListProps {
+  filters: ticketFilters;
+  onticketselect: (ticket: ticket) => void;
 }
 
-const IssueList: React.FC<IssueListProps> = ({ filters, onIssueSelect }) => {
-  const { issues, loading, error } = useIssues(filters);
+const ticketList: React.FC<ticketListProps> = ({ filters, onticketselect }) => {
+  const { tickets, loading, error } = usetickets(filters);
   
   return (
-    <div className="issue-list">
-      <IssueFilters filters={filters} />
-      <IssueTable 
-        issues={issues}
+    <div className="ticket-list">
+      <ticketFilters filters={filters} />
+      <ticketTable 
+        tickets={tickets}
         loading={loading}
-        onSelect={onIssueSelect}
+        onSelect={onticketselect}
       />
       <Pagination />
     </div>
@@ -155,23 +155,23 @@ const IssueList: React.FC<IssueListProps> = ({ filters, onIssueSelect }) => {
 };
 ```
 
-#### IssueDetail Component
+#### ticketDetail Component
 ```typescript
-interface IssueDetailProps {
-  issueId: string;
-  onUpdate: (issue: Issue) => void;
+interface ticketDetailProps {
+  ticketId: string;
+  onUpdate: (ticket: ticket) => void;
 }
 
-const IssueDetail: React.FC<IssueDetailProps> = ({ issueId, onUpdate }) => {
-  const { issue, loading } = useIssue(issueId);
+const ticketDetail: React.FC<ticketDetailProps> = ({ ticketId, onUpdate }) => {
+  const { ticket, loading } = useticket(ticketId);
   
   return (
-    <div className="issue-detail">
-      <IssueHeader issue={issue} />
-      <IssuePhotos photos={issue.photos} />
-      <IssueMap location={issue.location} />
-      <AssignmentPanel issue={issue} onUpdate={onUpdate} />
-      <ActivityTimeline activities={issue.activities} />
+    <div className="ticket-detail">
+      <ticketHeader ticket={ticket} />
+      <ticketPhotos photos={ticket.photos} />
+      <ticketMap location={ticket.location} />
+      <AssignmentPanel ticket={ticket} onUpdate={onUpdate} />
+      <ActivityTimeline activities={ticket.activities} />
     </div>
   );
 };
@@ -180,19 +180,19 @@ const IssueDetail: React.FC<IssueDetailProps> = ({ issueId, onUpdate }) => {
 ### Map Integration
 **Location**: `src/components/maps/`
 
-Interactive maps powered by Mapbox GL for geographic issue visualization.
+Interactive maps powered by Mapbox GL for geographic ticket visualization.
 
 ```typescript
-interface IssueMapProps {
-  issues: Issue[];
-  onIssueClick: (issue: Issue) => void;
+interface ticketMapProps {
+  tickets: ticket[];
+  onticketClick: (ticket: ticket) => void;
   center?: [number, number];
   zoom?: number;
 }
 
-const IssueMap: React.FC<IssueMapProps> = ({ 
-  issues, 
-  onIssueClick, 
+const ticketMap: React.FC<ticketMapProps> = ({ 
+  tickets, 
+  onticketClick, 
   center, 
   zoom 
 }) => {
@@ -213,11 +213,11 @@ const IssueMap: React.FC<IssueMapProps> = ({
   }, []);
   
   useEffect(() => {
-    if (map && issues.length > 0) {
-      // Add issue markers to map
-      addIssueMarkers(map, issues, onIssueClick);
+    if (map && tickets.length > 0) {
+      // Add ticket markers to map
+      addticketMarkers(map, tickets, onticketClick);
     }
-  }, [map, issues]);
+  }, [map, tickets]);
   
   return <div id="map-container" className="map-container" />;
 };
@@ -239,9 +239,9 @@ const AnalyticsDashboard: React.FC = () => {
       
       <div className="metrics-grid">
         <MetricCard 
-          title="Total Issues"
-          value={metrics?.totalIssues}
-          trend={metrics?.issuesTrend}
+          title="Total tickets"
+          value={metrics?.totaltickets}
+          trend={metrics?.ticketsTrend}
         />
         <MetricCard 
           title="Resolution Time"
@@ -256,7 +256,7 @@ const AnalyticsDashboard: React.FC = () => {
       </div>
       
       <ChartsGrid>
-        <IssueVolumeChart data={metrics?.volumeData} />
+        <ticketVolumeChart data={metrics?.volumeData} />
         <CategoryBreakdownChart data={metrics?.categoryData} />
         <TechnicianPerformanceChart data={metrics?.performanceData} />
         <GeographicHeatmap data={metrics?.geoData} />
@@ -488,13 +488,13 @@ Reusable UI components following design system principles:
 ### Code Splitting
 ```typescript
 // Lazy load components for better performance
-const IssueDetail = lazy(() => import('./pages/Issues/IssueDetail'));
+const ticketDetail = lazy(() => import('./pages/tickets/ticketDetail'));
 const Analytics = lazy(() => import('./pages/Analytics/Analytics'));
 
 // Use Suspense for loading states
 <Suspense fallback={<LoadingSpinner />}>
   <Routes>
-    <Route path="/issues/:id" element={<IssueDetail />} />
+    <Route path="/tickets/:id" element={<ticketDetail />} />
     <Route path="/analytics" element={<Analytics />} />
   </Routes>
 </Suspense>
@@ -503,13 +503,13 @@ const Analytics = lazy(() => import('./pages/Analytics/Analytics'));
 ### Memoization
 ```typescript
 // Memoize expensive calculations
-const sortedIssues = useMemo(() => {
-  return issues.sort((a, b) => b.priority - a.priority);
-}, [issues]);
+const sortedtickets = useMemo(() => {
+  return tickets.sort((a, b) => b.priority - a.priority);
+}, [tickets]);
 
 // Memoize callback functions
-const handleIssueSelect = useCallback((issue: Issue) => {
-  setSelectedIssue(issue);
+const handleticketselect = useCallback((ticket: ticket) => {
+  setSelectedticket(ticket);
 }, []);
 ```
 
@@ -518,29 +518,29 @@ const handleIssueSelect = useCallback((issue: Issue) => {
 ### Component Testing
 ```typescript
 import { render, screen, fireEvent } from '@testing-library/react';
-import { IssueList } from './IssueList';
+import { ticketList } from './ticketList';
 
-describe('IssueList', () => {
-  it('renders issues correctly', () => {
-    const mockIssues = [
-      { id: '1', title: 'Test Issue', status: 'open' }
+describe('ticketList', () => {
+  it('renders tickets correctly', () => {
+    const mocktickets = [
+      { id: '1', title: 'Test ticket', status: 'open' }
     ];
     
-    render(<IssueList issues={mockIssues} />);
+    render(<ticketList tickets={mocktickets} />);
     
-    expect(screen.getByText('Test Issue')).toBeInTheDocument();
+    expect(screen.getByText('Test ticket')).toBeInTheDocument();
   });
   
-  it('handles issue selection', () => {
+  it('handles ticket selection', () => {
     const handleSelect = jest.fn();
-    const mockIssues = [
-      { id: '1', title: 'Test Issue', status: 'open' }
+    const mocktickets = [
+      { id: '1', title: 'Test ticket', status: 'open' }
     ];
     
-    render(<IssueList issues={mockIssues} onSelect={handleSelect} />);
+    render(<ticketList tickets={mocktickets} onSelect={handleSelect} />);
     
-    fireEvent.click(screen.getByText('Test Issue'));
-    expect(handleSelect).toHaveBeenCalledWith(mockIssues[0]);
+    fireEvent.click(screen.getByText('Test ticket'));
+    expect(handleSelect).toHaveBeenCalledWith(mocktickets[0]);
   });
 });
 ```
@@ -590,4 +590,4 @@ npm run preview
 vercel --prod
 ```
 
-The Web Client provides a comprehensive administrative interface that enables efficient management of civic issues while maintaining excellent user experience and performance.
+The Web Client provides a comprehensive administrative interface that enables efficient management of civic tickets while maintaining excellent user experience and performance.

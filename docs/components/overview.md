@@ -1,6 +1,6 @@
 # Components Overview
 
-Civix is architected as a multi-component platform, with each component serving a specific purpose in the civic issue reporting ecosystem. This modular approach ensures scalability, maintainability, and clear separation of concerns.
+Civix is architected as a multi-component platform, with each component serving a specific purpose in the civic ticket reporting ecosystem. This modular approach ensures scalability, maintainability, and clear separation of concerns.
 
 ## Platform Components
 
@@ -10,7 +10,7 @@ Civix is architected as a multi-component platform, with each component serving 
 **Users**: City administrators, department heads, supervisors
 
 ### 📱 Mobile App (`clients/app/`)
-**Purpose**: Citizen-facing application for issue reporting and tracking  
+**Purpose**: Citizen-facing application for ticket reporting and tracking  
 **Technology**: React Native 0.79 + Expo 53  
 **Users**: Citizens, field technicians
 
@@ -235,22 +235,22 @@ cd clients/app && npx expo start --web
 ## Component Features
 
 ### Web Dashboard Features
-- **Issue Management**: View, filter, and manage all reported issues
-- **Geographic Visualization**: Interactive maps with issue clustering
+- **ticket Management**: View, filter, and manage all reported tickets
+- **Geographic Visualization**: Interactive maps with ticket clustering
 - **Analytics Dashboard**: Performance metrics and trend analysis
 - **User Management**: Manage citizens, technicians, and administrators
-- **Assignment System**: Manual and automatic issue assignment
+- **Assignment System**: Manual and automatic ticket assignment
 - **Reporting Tools**: Generate reports and export data
 - **Real-time Updates**: Live status updates and notifications
 
 ### Mobile App Features
-- **Issue Reporting**: Camera integration and GPS location
+- **ticket Reporting**: Camera integration and GPS location
 - **User Authentication**: Secure login and registration
-- **Issue Tracking**: View personal reported issues
+- **ticket Tracking**: View personal reported tickets
 - **Task Management**: For technicians to manage assignments
 - **Profile Management**: User settings and preferences
 - **Offline Support**: Basic functionality without internet
-- **Push Notifications**: Real-time updates on issue status
+- **Push Notifications**: Real-time updates on ticket status
 
 ### API Server Features
 - **RESTful API**: Comprehensive endpoints for all operations
@@ -359,7 +359,7 @@ GET /health              // Web dashboard status
 4. **API Gateway**: Centralized API management and routing
 
 ### Integration Opportunities
-- **IoT Sensors**: Automatic issue detection
+- **IoT Sensors**: Automatic ticket detection
 - **SMS Gateway**: Alternative reporting channel
 - **Payment System**: Fee-based premium services
 - **GIS Integration**: Advanced geographic features

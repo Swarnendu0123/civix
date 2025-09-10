@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Civix - Issue Assignment Demo</title>
+    <title>Civix - ticket Assignment Demo</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -49,13 +49,13 @@
             padding: 16px;
             margin: 12px 0;
         }
-        .issue-types {
+        .ticket-types {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 12px;
             margin: 12px 0;
         }
-        .issue-type {
+        .ticket-type {
             display: flex;
             align-items: center;
             padding: 12px;
@@ -64,7 +64,7 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-        .issue-type.selected {
+        .ticket-type.selected {
             border-color: #3B82F6;
             background: rgba(59, 130, 246, 0.1);
         }
@@ -76,10 +76,10 @@
             margin-right: 8px;
             position: relative;
         }
-        .issue-type.selected .radio {
+        .ticket-type.selected .radio {
             border-color: #3B82F6;
         }
-        .issue-type.selected .radio::after {
+        .ticket-type.selected .radio::after {
             content: '';
             width: 8px;
             height: 8px;
@@ -162,35 +162,35 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🏛️ Civix Issue Assignment System</h1>
-            <p>Automated Technician Assignment Based on Issue Classification</p>
+            <h1>🏛️ Civix ticket Assignment System</h1>
+            <p>Automated Technician Assignment Based on ticket Classification</p>
         </div>
 
         <div class="section">
-            <div class="feature-title">📱 Mobile App: Enhanced Issue Type Selection</div>
+            <div class="feature-title">📱 Mobile App: Enhanced ticket Type Selection</div>
             <div class="feature-desc">
-                Citizens can now select specific issue types with a clear radio button interface
+                Citizens can now select specific ticket types with a clear radio button interface
             </div>
             <div class="demo-box">
-                <h4>Issue Type Selection:</h4>
-                <div class="issue-types">
-                    <div class="issue-type">
+                <h4>ticket Type Selection:</h4>
+                <div class="ticket-types">
+                    <div class="ticket-type">
                         <div class="radio"></div>
                         <span>Sanitation</span>
                     </div>
-                    <div class="issue-type">
+                    <div class="ticket-type">
                         <div class="radio"></div>
                         <span>Electricity</span>
                     </div>
-                    <div class="issue-type selected">
+                    <div class="ticket-type selected">
                         <div class="radio"></div>
                         <span>Water</span>
                     </div>
-                    <div class="issue-type">
+                    <div class="ticket-type">
                         <div class="radio"></div>
                         <span>Road</span>
                     </div>
-                    <div class="issue-type">
+                    <div class="ticket-type">
                         <div class="radio"></div>
                         <span>Other</span>
                     </div>
@@ -227,7 +227,7 @@
                 Intelligent filtering based on specialization and availability status
             </div>
             <div class="demo-box">
-                <h4>Available Technicians for Water Issues:</h4>
+                <h4>Available Technicians for Water tickets:</h4>
                 <div class="tech-grid">
                     <div class="tech-card available">
                         <h5>John Water</h5>
@@ -251,21 +251,21 @@
         <div class="section">
             <div class="feature-title">🔄 Assignment Workflow</div>
             <div class="feature-desc">
-                Complete automated flow from issue creation to technician assignment
+                Complete automated flow from ticket creation to technician assignment
             </div>
             <div class="demo-box">
                 <div class="flow-step">
                     <div class="step-number">1</div>
                     <div>
-                        <strong>Issue Submitted</strong><br>
-                        Citizen selects issue type and provides description
+                        <strong>ticket Submitted</strong><br>
+                        Citizen selects ticket type and provides description
                     </div>
                 </div>
                 <div class="flow-step">
                     <div class="step-number">2</div>
                     <div>
                         <strong>Intent Recognition</strong><br>
-                        AI classifies "other" issues into specific categories
+                        AI classifies "other" tickets into specific categories
                     </div>
                 </div>
                 <div class="flow-step">
@@ -297,7 +297,7 @@
                     <li>🧠 <strong>Intent Recognition:</strong> Gemini LLM integration with keyword fallback</li>
                     <li>🔍 <strong>Filtering Service:</strong> Specialization mapping and status filtering</li>
                     <li>🌐 <strong>API Endpoints:</strong> Technician suggestions and enhanced assignment</li>
-                    <li>📱 <strong>Mobile UI:</strong> Radio button issue type selection</li>
+                    <li>📱 <strong>Mobile UI:</strong> Radio button ticket type selection</li>
                 </ul>
                 
                 <h4>API Examples:</h4>
@@ -311,10 +311,10 @@
     </div>
 
     <script>
-        // Add interactivity to issue types
-        document.querySelectorAll('.issue-type').forEach(type => {
+        // Add interactivity to ticket types
+        document.querySelectorAll('.ticket-type').forEach(type => {
             type.addEventListener('click', () => {
-                document.querySelectorAll('.issue-type').forEach(t => t.classList.remove('selected'));
+                document.querySelectorAll('.ticket-type').forEach(t => t.classList.remove('selected'));
                 type.classList.add('selected');
             });
         });

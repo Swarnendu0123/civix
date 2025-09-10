@@ -29,11 +29,11 @@ interface AuthContextType {
 const getRolePermissions = (role: UserRole): string[] => {
   switch (role) {
     case 'admin':
-      return ['manage_issues', 'assign_technicians', 'view_all', 'manage_technicians'];
+      return ['manage_tickets', 'assign_technicians', 'view_all', 'manage_technicians'];
     case 'department_staff':
-      return ['view_department_issues', 'update_issues'];
+      return ['view_department_tickets', 'update_tickets'];
     case 'technician':
-      return ['view_assigned_issues', 'update_status', 'upload_proof'];
+      return ['view_assigned_tickets', 'update_status', 'upload_proof'];
     default:
       return [];
   }

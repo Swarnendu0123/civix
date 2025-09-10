@@ -22,7 +22,7 @@ const Navbar: React.FC = () => {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: FiHome },
-    { name: 'Issues', href: '/issues', icon: FiList },
+    { name: 'tickets', href: '/tickets', icon: FiList },
     { name: 'Map', href: '/map', icon: FiMap },
     { name: 'Technicians', href: '/technicians', icon: FiUsers },
     { name: 'Users', href: '/users', icon: FiUser },

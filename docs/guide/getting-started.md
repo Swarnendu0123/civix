@@ -122,7 +122,7 @@ curl http://localhost:3000/api/health
 ### Test Mobile App
 1. Open http://localhost:8081 in your browser
 2. You should see the mobile app interface
-3. Navigate through tabs: Home, Map, Raise Issue, etc.
+3. Navigate through tabs: Home, Map, Raise ticket, etc.
 
 ### Test Documentation
 1. Open the documentation URL (check terminal output)
@@ -131,15 +131,15 @@ curl http://localhost:3000/api/health
 
 ## 6. Quick Feature Test
 
-### Report an Issue (Mobile App)
-1. Go to the "Raise Issue" tab
-2. Fill in issue details
+### Report an ticket (Mobile App)
+1. Go to the "Raise ticket" tab
+2. Fill in ticket details
 3. Add a photo (if camera permissions available)
-4. Submit the issue
+4. Submit the ticket
 
-### View Issues (Web Dashboard)
-1. Navigate to the issues section
-2. See the reported issue appear
+### View tickets (Web Dashboard)
+1. Navigate to the tickets section
+2. See the reported ticket appear
 3. Test assignment to a technician
 
 ## Build and Production Testing
@@ -164,8 +164,8 @@ All builds should complete without errors.
 
 ### 🚀 Fully Functional Platform
 - **Backend API**: Complete REST API with authentication
-- **Admin Dashboard**: React-based web interface for managing issues
-- **Mobile App**: React Native app for citizens to report issues
+- **Admin Dashboard**: React-based web interface for managing tickets
+- **Mobile App**: React Native app for citizens to report tickets
 - **Documentation**: This comprehensive documentation site
 
 ### 🗄️ Database Ready
@@ -200,13 +200,13 @@ Now that you have Civix running locally, here are some suggested next steps:
 3. **Configuration**: Customize the platform for your city
 
 ### For Citizens
-1. **Issue Reporting**: Check out [Citizen Guide](../user-guides/citizens.md)
+1. **ticket Reporting**: Check out [Citizen Guide](../user-guides/citizens.md)
 2. **Mobile App Features**: Explore all available features
-3. **Tracking Issues**: Learn how to track your reported issues
+3. **Tracking tickets**: Learn how to track your reported tickets
 
 ## Troubleshooting
 
-### Common Issues
+### Common tickets
 
 #### Port Conflicts
 If you get port conflict errors:
@@ -222,19 +222,19 @@ rm -rf node_modules package-lock.json
 npm install
 ```
 
-#### Expo/React Native Issues
+#### Expo/React Native tickets
 ```bash
 # Clear Expo cache
 npx expo install --fix
 npx expo start --clear
 ```
 
-#### MongoDB Connection Issues
+#### MongoDB Connection tickets
 The system automatically falls back to in-memory storage if MongoDB is unavailable, so you can still test all features.
 
 ### Getting Help
 
-- **Issues**: Report bugs on [GitHub Issues](https://github.com/swrno/civix/issues)
+- **tickets**: Report bugs on [GitHub tickets](https://github.com/swrno/civix/tickets)
 - **Discussions**: Join discussions on [GitHub Discussions](https://github.com/swrno/civix/discussions)
 - **Documentation**: Browse this comprehensive documentation
 - **Code Examples**: Check the demo.html file for feature examples
@@ -255,4 +255,4 @@ The system automatically falls back to in-memory storage if MongoDB is unavailab
 - **Development**: ~500MB RAM total for all services
 - **Production**: Significantly lower memory footprint
 
-Congratulations! You now have a fully functional civic issue reporting platform running locally. The platform is ready for customization, development, or deployment to production environments.
+Congratulations! You now have a fully functional civic ticket reporting platform running locally. The platform is ready for customization, development, or deployment to production environments.

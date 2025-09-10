@@ -58,7 +58,7 @@ See [API_TESTING.md](./API_TESTING.md) for comprehensive API testing examples.
   location: { latitude: Number, longitude: Number },
   role: ['user', 'technician', 'authority', 'admin'],
   isTechnician: Boolean,
-  issues: [ObjectId], // References to tickets
+  tickets: [ObjectId], // References to tickets
   points: Number
 }
 ```
@@ -69,9 +69,9 @@ See [API_TESTING.md](./API_TESTING.md) for comprehensive API testing examples.
   creator_id: ObjectId (ref: User),
   creator_name: String,
   status: ['open', 'resolved', 'in process'],
-  issue_name: String,
-  issue_category: String,
-  issue_description: String,
+  ticket_name: String,
+  ticket_category: String,
+  ticket_description: String,
   image_url: String,
   tags: [String],
   votes: { upvotes: Number, downvotes: Number },
@@ -111,7 +111,7 @@ See [API_TESTING.md](./API_TESTING.md) for comprehensive API testing examples.
         isTechnician: boolean,
 
         // Automatically updated
-        issues: Array<Ref(Ticket)>,        
+        tickets: Array<Ref(Ticket)>,        
         points: integer/float
     }
     ```
@@ -132,7 +132,7 @@ See [API_TESTING.md](./API_TESTING.md) for comprehensive API testing examples.
         isTechnician: boolean,
 
         // Automatically updated
-        issues: Array<Ref(Ticket)>,        
+        tickets: Array<Ref(Ticket)>,        
         points: integer/float
     }
     ```
@@ -154,7 +154,7 @@ See [API_TESTING.md](./API_TESTING.md) for comprehensive API testing examples.
         isTechnician: boolean,
 
         // Automatically updated
-        issues: Array<Ref(Ticket)>,        
+        tickets: Array<Ref(Ticket)>,        
         points: integer/float
     }
     ```
@@ -174,9 +174,9 @@ See [API_TESTING.md](./API_TESTING.md) for comprehensive API testing examples.
 	    creator_id: uuid,
 	    creator_name: string,
 	    status: [open / resolved / in process],
-	    issue_name: string,
-	    issue_category: string		//water, electric issue
-	    issue_description: string,
+	    ticket_name: string,
+	    ticket_category: string		//water, electric ticket
+	    ticket_description: string,
 	    image_url: string,
 	    tags: [string],
 	        votes: {
@@ -198,9 +198,9 @@ See [API_TESTING.md](./API_TESTING.md) for comprehensive API testing examples.
         creator_id: uuid,
         creator_name: string,
         status: [open / resolved / in process],
-        issue_name: string,
-        issue_category: string		//water, electric issue
-        issue_description: string,
+        ticket_name: string,
+        ticket_category: string		//water, electric ticket
+        ticket_description: string,
         image_url: string,
         tags: [string],
             votes: {

@@ -11,11 +11,11 @@ import {
 import api from '../services/api';
 import type { Ticket } from '../types';
 
-interface IssuesTableProps {
-  onViewIssue: (ticket: Ticket) => void;
+interface ticketsTableProps {
+  onViewticket: (ticket: Ticket) => void;
 }
 
-const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
+const ticketsTable: React.FC<ticketsTableProps> = ({ onViewticket }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -49,13 +49,13 @@ const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
     return tickets
       .filter(ticket => {
         if (statusFilter !== 'all' && ticket.status !== statusFilter) return false;
-        if (categoryFilter !== 'all' && ticket.issue_category !== categoryFilter) return false;
+        if (categoryFilter !== 'all' && ticket.ticket_category !== categoryFilter) return false;
         if (urgencyFilter !== 'all' && ticket.urgency !== urgencyFilter) return false;
         if (searchQuery) {
           const query = searchQuery.toLowerCase();
           return (
-            ticket.issue_name.toLowerCase().includes(query) ||
-            ticket.issue_description.toLowerCase().includes(query) ||
+            ticket.ticket_name.toLowerCase().includes(query) ||
+            ticket.ticket_description.toLowerCase().includes(query) ||
             ticket.creator_name.toLowerCase().includes(query) ||
             `${ticket.location.latitude}, ${ticket.location.longitude}`.toLowerCase().includes(query)
           );
@@ -110,7 +110,7 @@ const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
     }
   };
 
-  const categories = [...new Set(tickets.map(ticket => ticket.issue_category))];
+  const categories = [...new Set(tickets.map(ticket => ticket.ticket_category))];
 
   const handleSort = (column: 'opening_time' | 'votes' | 'urgency') => {
     if (sortBy === column) {
@@ -135,7 +135,7 @@ const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
     return (
       <div className="space-y-6">
         <div className="text-center py-12">
-          <div className="text-red-500 text-lg mb-2">Error loading issues</div>
+          <div className="text-red-500 text-lg mb-2">Error loading tickets</div>
           <div className="text-gray-600">{error}</div>
         </div>
       </div>
@@ -148,10 +148,10 @@ const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
       <div className="md:flex md:items-center md:justify-between">
         <div className="flex-1 min-w-0">
           <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-            Issue Management
+            ticket Management
           </h2>
           <p className="mt-1 text-sm text-gray-500">
-            Manage and track municipal issues reported by citizens
+            Manage and track municipal tickets reported by citizens
           </p>
         </div>
       </div>
@@ -167,7 +167,7 @@ const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
               </div>
               <input
                 type="text"
-                placeholder="Search issues..."
+                placeholder="Search tickets..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
@@ -228,7 +228,7 @@ const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Issue
+                  ticket
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Reporter
@@ -295,10 +295,10 @@ const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900 max-w-xs truncate">
-                          {ticket.issue_name}
+                          {ticket.ticket_name}
                         </div>
                         <div className="text-sm text-gray-500 capitalize">
-                          {ticket.issue_category}
+                          {ticket.ticket_category}
                         </div>
                       </div>
                     </div>
@@ -345,7 +345,7 @@ const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button
-                      onClick={() => onViewIssue(ticket)}
+                      onClick={() => onViewticket(ticket)}
                       className="text-blue-600 hover:text-blue-900 inline-flex items-center"
                     >
                       <FiEye className="h-4 w-4 mr-1" />
@@ -361,7 +361,7 @@ const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
         {filteredAndSortedTickets.length === 0 && (
           <div className="text-center py-12">
             <FiFilter className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No issues found</h3>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No tickets found</h3>
             <p className="mt-1 text-sm text-gray-500">Try adjusting your search or filter criteria.</p>
           </div>
         )}
@@ -370,4 +370,4 @@ const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
   );
 };
 
-export default IssuesTable;
+export default ticketsTable;

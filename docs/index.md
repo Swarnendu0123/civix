@@ -4,8 +4,8 @@ layout: home
 
 hero:
   name: "Civix"
-  text: "Civic Issue Reporting Platform"
-  tagline: "Empowering citizens and governments to collaborate on civic issues efficiently"
+  text: "Civic ticket Reporting Platform"
+  tagline: "Empowering citizens and governments to collaborate on civic tickets efficiently"
   image:
     src: /logo.svg
     alt: Civix
@@ -20,11 +20,11 @@ hero:
 features:
   - icon: 📱
     title: Mobile-First Reporting
-    details: Citizens can quickly report issues with photos, location data, and detailed descriptions using our React Native mobile app.
+    details: Citizens can quickly report tickets with photos, location data, and detailed descriptions using our React Native mobile app.
   
   - icon: 🖥️
     title: Real-Time Dashboard
-    details: City administrators get a comprehensive web dashboard to track, assign, and manage civic issues with advanced analytics.
+    details: City administrators get a comprehensive web dashboard to track, assign, and manage civic tickets with advanced analytics.
   
   - icon: 🔧
     title: Smart Assignment System
@@ -32,7 +32,7 @@ features:
   
   - icon: 🗺️
     title: Geographic Visualization
-    details: Interactive maps powered by Mapbox show issue distribution, hot spots, and technician locations for better resource allocation.
+    details: Interactive maps powered by Mapbox show ticket distribution, hot spots, and technician locations for better resource allocation.
   
   - icon: 🔐
     title: Role-Based Access
@@ -48,6 +48,6 @@ features:
   
   - icon: ⚡
     title: Real-Time Updates
-    details: Live notifications and status updates keep all stakeholders informed throughout the issue resolution process.
+    details: Live notifications and status updates keep all stakeholders informed throughout the ticket resolution process.
 ---
 

@@ -29,9 +29,9 @@ interface Ticket {
   creator_id: string;
   creator_name: string;
   status: 'open' | 'resolved' | 'in process';
-  issue_name: string;
-  issue_category: string;
-  issue_description: string;
+  ticket_name: string;
+  ticket_category: string;
+  ticket_description: string;
   image_url?: string;
   tags: string[];
   votes: Votes;
@@ -72,7 +72,37 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
   const tintColor = useThemeColor({}, 'tint');
   const borderColor = isDark ? '#333' : '#e1e1e1';
 
-  if (!ticket) return null;
+  // Debug logging
+  console.log('TicketDetailModal render:', { visible, ticket: ticket ? { ...ticket } : null, loading });
+
+  if (!visible) return null;
+
+  if (!ticket) {
+    return (
+      <Modal
+        visible={visible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={onClose}
+      >
+        <View style={[styles.container, { backgroundColor }]}>
+          <View style={[styles.header, { borderBottomColor: borderColor }]}>
+            <Text style={[styles.headerTitle, { color: textColor }]}>
+              Ticket Details
+            </Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Ionicons name="close" size={24} color={textColor} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.errorContainer}>
+            <Text style={[styles.errorText, { color: textColor }]}>
+              No ticket data available
+            </Text>
+          </View>
+        </View>
+      </Modal>
+    );
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -178,16 +208,16 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                 </View>
               </View>
 
-          {/* Issue Title */}
-          <Text style={[styles.issueTitle, { color: textColor }]}>
-            {ticket.issue_name}
+          {/* ticket Title */}
+          <Text style={[styles.ticketTitle, { color: textColor }]}>
+            {ticket.ticket_name}
           </Text>
 
           {/* Category */}
           <View style={styles.categoryContainer}>
             <Ionicons name="pricetag" size={16} color={tintColor} />
             <Text style={[styles.categoryText, { color: textColor }]}>
-              {ticket.issue_category}
+              {ticket.ticket_category}
             </Text>
           </View>
 
@@ -202,7 +232,7 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: textColor }]}>Description</Text>
             <Text style={[styles.description, { color: textColor }]}>
-              {ticket.issue_description}
+              {ticket.ticket_description}
             </Text>
           </View>
 
@@ -391,7 +421,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
-  issueTitle: {
+  ticketTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 12,

@@ -1,6 +1,6 @@
-# Civix - Civic Issue Reporting Platform
+# Civix - Civic ticket Reporting Platform
 
-Civix is a platform that enables citizens to quickly report civic issues with photos and location data, while providing local governments with a real-time dashboard to track, assign, and resolve problems efficiently. The project consists of multiple components: a React web client for city administrators, a React Native/Expo mobile app for citizens, a Node.js backend server, and VitePress documentation.
+Civix is a platform that enables citizens to quickly report civic tickets with photos and location data, while providing local governments with a real-time dashboard to track, assign, and resolve problems efficiently. The project consists of multiple components: a React web client for city administrators, a React Native/Expo mobile app for citizens, a Node.js backend server, and VitePress documentation.
 
 Always reference these instructions first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.
 
@@ -159,10 +159,10 @@ Before making changes and after implementing features:
 
 ### Troubleshooting
 
-#### Common Issues and Solutions
+#### Common tickets and Solutions
 - **Port conflicts**: Web client and docs both use port 5173 by default - run only one at a time
 - **Mobile app won't start**: Ensure you're using `npx expo start --web` for web testing
-- **Build failures**: Always check TypeScript errors first, then dependency issues
+- **Build failures**: Always check TypeScript errors first, then dependency tickets
 - **Networking disabled in Expo**: This is normal in CI environments, app still functions
 
 #### When Things Don't Work
@@ -174,8 +174,8 @@ Before making changes and after implementing features:
 ## Project Context
 
 ### Purpose and Architecture
-- **Citizens use the mobile app** to report civic issues with photos and GPS location
-- **City administrators use the web client** to track, assign, and resolve reported issues
+- **Citizens use the mobile app** to report civic tickets with photos and GPS location
+- **City administrators use the web client** to track, assign, and resolve reported tickets
 - **Backend server** will handle API requests and data storage (currently minimal)
 - **Documentation site** provides project information and API documentation
 

@@ -7,7 +7,6 @@ const User = require('../models/User');
 router.get('/all', async (req, res) => {
   try {
     const tickets = await Ticket.find()
-      .populate('creator_id', 'email name')
       .populate('authority', 'email name role')
       .sort({ createdAt: -1 }); // Sort by newest first
 
@@ -28,12 +27,11 @@ router.get('/all', async (req, res) => {
 router.post('/create', async (req, res) => {
   try {
     const {
-      creator_id,
-      creator_name,
       creator_email,
-      issue_name,
-      issue_category,
-      issue_description,
+      creator_name,
+      ticket_name,
+      ticket_category,
+      ticket_description,
       image_url,
       tags,
       urgency,
@@ -41,9 +39,9 @@ router.post('/create', async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!creator_id || !creator_name || !issue_name || !issue_category || !issue_description || !location) {
+    if (!creator_email || !creator_name || !ticket_name || !ticket_category || !ticket_description || !location) {
       return res.status(400).json({ 
-        error: 'creator_id, creator_name, issue_name, issue_category, issue_description, and location are required' 
+        error: 'creator_email, creator_name, ticket_name, ticket_category, ticket_description, and location are required' 
       });
     }
 
@@ -54,43 +52,19 @@ router.post('/create', async (req, res) => {
       });
     }
 
-    // Handle creator - first try to find by MongoDB ObjectId, then by Firebase UID via email or create new user
-    let creator = null;
+    // Handle creator - find by email or create new user
+    let creator = await User.findOne({ email: creator_email });
     
-    // Check if creator_id is a valid MongoDB ObjectId
-    const mongoose = require('mongoose');
-    if (mongoose.Types.ObjectId.isValid(creator_id)) {
-      creator = await User.findById(creator_id);
-    }
-    
-    // If not found and we have email, try to find by email or create user
     if (!creator) {
-      if (creator_email) {
-        creator = await User.findOne({ email: creator_email });
-        
-        if (!creator) {
-          // Create new user with Firebase UID as password (for consistency)
-          creator = new User({
-            email: creator_email,
-            password: creator_id, // Use Firebase UID as password
-            name: creator_name,
-            role: 'user'
-          });
-          await creator.save();
-          console.log('Created new user for ticket creation:', creator);
-        }
-      } else {
-        // If no email provided, create a temporary user entry
-        const tempEmail = `user_${creator_id}@civix.temp`;
-        creator = new User({
-          email: tempEmail,
-          password: creator_id,
-          name: creator_name,
-          role: 'user'
-        });
-        await creator.save();
-        console.log('Created temporary user for ticket creation:', creator);
-      }
+      // Create new user if not found
+      creator = new User({
+        email: creator_email,
+        password: 'tempPassword123', // Default temporary password
+        name: creator_name,
+        role: 'user'
+      });
+      await creator.save();
+      console.log('Created new user for ticket creation:', creator);
     }
 
     // Validate urgency if provided
@@ -101,13 +75,13 @@ router.post('/create', async (req, res) => {
       });
     }
 
-    // Create new ticket using the MongoDB _id of the creator
+    // Create new ticket using the email of the creator
     const newTicket = new Ticket({
-      creator_id: creator._id, // Use the MongoDB ObjectId, not the Firebase UID
+      creator_email: creator.email, // Use the email, not the MongoDB ObjectId
       creator_name,
-      issue_name,
-      issue_category,
-      issue_description,
+      ticket_name,
+      ticket_category,
+      ticket_description,
       image_url: image_url || null,
       tags: tags || [],
       urgency: urgency || 'moderate',
@@ -119,21 +93,19 @@ router.post('/create', async (req, res) => {
 
     await newTicket.save();
 
-    // Add ticket reference to user's issues array and award 10 points using MongoDB _id
-    await User.findByIdAndUpdate(
-      creator._id, // Use the MongoDB ObjectId
+    // Add ticket reference to user's tickets array and award 10 points using email
+    await User.findOneAndUpdate(
+      { email: creator.email }, // Use the email
       { 
-        $push: { issues: newTicket._id },
+        $push: { tickets: newTicket._id },
         $inc: { points: 10 } // Award 10 points for creating a ticket
       }
     );
 
-    console.log(`Awarded 10 points to user ${creator.name} for creating ticket: ${newTicket.issue_name}`);
+    console.log(`Awarded 10 points to user ${creator.name} for creating ticket: ${newTicket.ticket_name}`);
 
-    // Populate creator and authority info for response
-    const populatedTicket = await Ticket.findById(newTicket._id)
-      .populate('creator_id', 'email name')
-      .populate('authority', 'email name role');
+    // Return the populated ticket for response
+    const populatedTicket = await Ticket.findById(newTicket._id);
 
     res.status(201).json({
       message: 'Ticket created successfully',
@@ -154,9 +126,9 @@ router.put('/update/:id', async (req, res) => {
     const { id } = req.params;
     const {
       status,
-      issue_name,
-      issue_category,
-      issue_description,
+      ticket_name,
+      ticket_category,
+      ticket_description,
       image_url,
       tags,
       votes,
@@ -209,9 +181,9 @@ router.put('/update/:id', async (req, res) => {
         updateFields.closing_time = new Date();
       }
     }
-    if (issue_name !== undefined) updateFields.issue_name = issue_name;
-    if (issue_category !== undefined) updateFields.issue_category = issue_category;
-    if (issue_description !== undefined) updateFields.issue_description = issue_description;
+    if (ticket_name !== undefined) updateFields.ticket_name = ticket_name;
+    if (ticket_category !== undefined) updateFields.ticket_category = ticket_category;
+    if (ticket_description !== undefined) updateFields.ticket_description = ticket_description;
     if (image_url !== undefined) updateFields.image_url = image_url;
     if (tags !== undefined) updateFields.tags = tags;
     if (votes !== undefined) updateFields.votes = votes;
@@ -233,8 +205,7 @@ router.put('/update/:id', async (req, res) => {
       id,
       updateFields,
       { new: true, runValidators: true }
-    ).populate('creator_id', 'email name')
-     .populate('authority', 'email name role');
+    ).populate('authority', 'email name role');
 
     res.json({
       message: 'Ticket updated successfully',
@@ -264,8 +235,8 @@ router.get('/:id', async (req, res) => {
 
     // Get creator details
     let creator = null;
-    if (ticket.creator_id) {
-      creator = await User.findOne({ email: ticket.creator_id });
+    if (ticket.creator_email) {
+      creator = await User.findOne({ email: ticket.creator_email });
     }
 
     // Get authority details if assigned

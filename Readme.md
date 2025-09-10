@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Civix is a platform that lets citizens quickly report civic issues with photos and location, while giving local governments a real-time dashboard to track, assign, and resolve problems efficiently.
+Civix is a platform that lets citizens quickly report civic tickets with photos and location, while giving local governments a real-time dashboard to track, assign, and resolve problems efficiently.
 
 ## Project Structure
 

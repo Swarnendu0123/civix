@@ -92,7 +92,7 @@ sequenceDiagram
 - **PUT** `/users/:id` - Update user (admin only)
 - **DELETE** `/users/:id` - Delete user (admin only)
 
-### 🎫 Issue/Ticket Management
+### 🎫 ticket/Ticket Management
 - **GET** `/tickets` - List all tickets
 - **POST** `/tickets` - Create new ticket
 - **GET** `/tickets/:id` - Get specific ticket
@@ -200,9 +200,9 @@ Authorization: Bearer <token>
 Content-Type: application/json
 
 {
-  "issue_name": "Broken Streetlight",
-  "issue_description": "The streetlight on Main St is not working",
-  "issue_category": "Electric issue",
+  "ticket_name": "Broken Streetlight",
+  "ticket_description": "The streetlight on Main St is not working",
+  "ticket_category": "Electric ticket",
   "location": {
     "coordinates": {
       "lat": 40.7128,
@@ -224,7 +224,7 @@ Content-Type: application/json
       "id": "ticket_12345",
       "creator_id": "user_12345",
       "creator_name": "John Doe",
-      "issue_name": "Broken Streetlight",
+      "ticket_name": "Broken Streetlight",
       "status": "open",
       "opening_time": "2025-01-09T10:30:00.000Z",
       "location": {
@@ -239,7 +239,7 @@ Content-Type: application/json
 
 #### List Tickets
 ```http
-GET /api/tickets?page=1&limit=10&status=open&category=Electric%20issue
+GET /api/tickets?page=1&limit=10&status=open&category=Electric%20ticket
 Authorization: Bearer <token>
 ```
 
@@ -247,10 +247,10 @@ Authorization: Bearer <token>
 - `page` (optional): Page number (default: 1)
 - `limit` (optional): Items per page (default: 10, max: 100)
 - `status` (optional): Filter by status (open, in_process, resolved)
-- `category` (optional): Filter by issue category
+- `category` (optional): Filter by ticket category
 - `urgency` (optional): Filter by urgency level
 - `assigned_to` (optional): Filter by assigned technician
-- `creator_id` (optional): Filter by issue creator
+- `creator_id` (optional): Filter by ticket creator
 
 **Response:**
 ```json
@@ -260,7 +260,7 @@ Authorization: Bearer <token>
     "tickets": [
       {
         "id": "ticket_12345",
-        "issue_name": "Broken Streetlight",
+        "ticket_name": "Broken Streetlight",
         "status": "open",
         "urgency": "moderate",
         "opening_time": "2025-01-09T10:30:00.000Z"
@@ -295,7 +295,7 @@ Authorization: Bearer <token>
       "email": "john@example.com",
       "role": "citizen",
       "points": 150,
-      "issues": ["ticket_12345", "ticket_67890"],
+      "tickets": ["ticket_12345", "ticket_67890"],
       "created_at": "2025-01-01T00:00:00.000Z"
     }
   }
@@ -341,7 +341,7 @@ Authorization: Bearer <token>
       }
     },
     "categories": {
-      "Electric issue": 25,
+      "Electric ticket": 25,
       "Water": 15,
       "Road maintenance": 30,
       "Sanitation": 10
@@ -508,7 +508,7 @@ curl -X GET http://localhost:3000/api/users/profile \
 curl -X POST http://localhost:3000/api/tickets \
   -H "Authorization: Bearer TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"issue_name":"Test Issue","issue_description":"Test description","issue_category":"Electric issue","urgency":"moderate"}'
+  -d '{"ticket_name":"Test ticket","ticket_description":"Test description","ticket_category":"Electric ticket","urgency":"moderate"}'
 ```
 
 ### Using Postman

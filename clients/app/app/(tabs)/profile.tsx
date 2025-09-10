@@ -11,7 +11,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
 import { Colors } from '@/constants/Colors';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import ThemeToggle from '@/components/ThemeToggle';
 import { useAuth } from '@/hooks/useAuth';
 import EditProfileModal from '@/components/EditProfileModal';
 
@@ -20,20 +19,8 @@ export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const [editModalVisible, setEditModalVisible] = useState(false);
 
-  // Sample user analytics - in real app would come from API
-  const analytics = {
-    ticketsReported: 12,
-    ticketsUpvoted: 45,
-    pointsEarned: user?.points || 250,
-    badgesEarned: 3
-  };
-
   const handleEditProfile = () => {
     setEditModalVisible(true);
-  };
-
-  const handleSettings = () => {
-    Alert.alert('Settings', 'Would navigate to settings screen');
   };
 
   const handleLogout = () => {
@@ -45,7 +32,7 @@ export default function ProfileScreen() {
         { text: 'Logout', style: 'destructive', onPress: async () => {
           try {
             await logout();
-          } catch (error) {
+          } catch {
             Alert.alert('Error', 'Failed to logout. Please try again.');
           }
         }}
@@ -53,21 +40,16 @@ export default function ProfileScreen() {
     );
   };
 
-  const handleContactSupport = () => {
-    Alert.alert('Contact Support', 'Would open support contact options');
-  };
-
-  const handleAbout = () => {
-    Alert.alert('About Civix', 'Civix v1.0.0\nMaking communities better together');
-  };
-
   const formatJoinDate = (dateString: string) => {
     if (!dateString) return 'Recently';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
-      month: 'long'
+      month: 'long',
+      day: 'numeric'
     });
   };
+
+  const styles = createStyles(colorScheme);
 
   if (!user) {
     return (
@@ -81,8 +63,6 @@ export default function ProfileScreen() {
       </SafeAreaView>
     );
   }
-
-  const styles = createStyles(colorScheme);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -101,7 +81,7 @@ export default function ProfileScreen() {
             <View style={styles.avatar}>
               <IconSymbol name="person.fill" size={48} color="white" />
             </View>
-            {user.role === 'technician' && (
+            {user.isTechnician && (
               <View style={styles.technicianBadge}>
                 <IconSymbol name="wrench.fill" size={16} color="white" />
               </View>
@@ -110,22 +90,68 @@ export default function ProfileScreen() {
           
           <View style={styles.userInfo}>
             <Text style={styles.userName}>{user.name || 'User'}</Text>
-            {user.role === 'technician' && (
+            {user.isTechnician && (
               <Text style={styles.technicianLabel}>Technician</Text>
             )}
             <Text style={styles.userEmail}>{user.email}</Text>
             {user.phone && (
               <Text style={styles.userPhone}>{user.phone}</Text>
             )}
-            {user.location && (
+            {user.address && (
               <Text style={styles.userLocation}>
                 <IconSymbol name="location" size={14} color={Colors[colorScheme].tabIconDefault} />
-                {' '}{user.location}
+                {' '}{user.address}
               </Text>
             )}
             <Text style={styles.joinDate}>
-              Member since {formatJoinDate(user.joinedDate)}
+              Member since {formatJoinDate(user.createdAt)}
             </Text>
+          </View>
+        </View>
+
+        {/* Profile Details */}
+        <View style={styles.detailsCard}>
+          <Text style={styles.sectionTitle}>Profile Information</Text>
+          
+          <View style={styles.detailRow}>
+            <View style={styles.detailLabelContainer}>
+              <IconSymbol name="envelope" size={16} color={Colors[colorScheme].tabIconDefault} />
+              <Text style={styles.detailLabel}>Email</Text>
+            </View>
+            <Text style={styles.detailValue}>{user.email}</Text>
+            <Text style={styles.notEditable}>Not editable</Text>
+          </View>
+
+          <View style={styles.detailRow}>
+            <View style={styles.detailLabelContainer}>
+              <IconSymbol name="person" size={16} color={Colors[colorScheme].tabIconDefault} />
+              <Text style={styles.detailLabel}>Name</Text>
+            </View>
+            <Text style={styles.detailValue}>{user.name || 'Not set'}</Text>
+          </View>
+
+          <View style={styles.detailRow}>
+            <View style={styles.detailLabelContainer}>
+              <IconSymbol name="phone" size={16} color={Colors[colorScheme].tabIconDefault} />
+              <Text style={styles.detailLabel}>Phone</Text>
+            </View>
+            <Text style={styles.detailValue}>{user.phone || 'Not set'}</Text>
+          </View>
+
+          <View style={styles.detailRow}>
+            <View style={styles.detailLabelContainer}>
+              <IconSymbol name="location" size={16} color={Colors[colorScheme].tabIconDefault} />
+              <Text style={styles.detailLabel}>Address</Text>
+            </View>
+            <Text style={styles.detailValue}>{user.address || 'Not set'}</Text>
+          </View>
+
+          <View style={styles.detailRow}>
+            <View style={styles.detailLabelContainer}>
+              <IconSymbol name="shield" size={16} color={Colors[colorScheme].tabIconDefault} />
+              <Text style={styles.detailLabel}>Role</Text>
+            </View>
+            <Text style={styles.detailValue}>{user.role}</Text>
           </View>
         </View>
 
@@ -135,62 +161,21 @@ export default function ProfileScreen() {
             <IconSymbol name="star.fill" size={24} color="#F59E0B" />
             <Text style={styles.pointsTitle}>Civix Points</Text>
           </View>
-          <Text style={styles.pointsValue}>{user.points}</Text>
+          <Text style={styles.pointsValue}>{user.points || 0}</Text>
           <Text style={styles.pointsSubtext}>
             Keep reporting and engaging to earn more points!
           </Text>
         </View>
 
-        {/* Analytics */}
-        <View style={styles.analyticsCard}>
-          <Text style={styles.analyticsTitle}>Your Impact</Text>
-          <View style={styles.analyticsGrid}>
-            <View style={styles.analyticItem}>
-              <Text style={styles.analyticNumber}>{analytics.ticketsReported}</Text>
-              <Text style={styles.analyticLabel}>Tickets Reported</Text>
-            </View>
-            <View style={styles.analyticItem}>
-              <Text style={styles.analyticNumber}>{analytics.ticketsUpvoted}</Text>
-              <Text style={styles.analyticLabel}>Tickets Upvoted</Text>
-            </View>
-            <View style={styles.analyticItem}>
-              <Text style={styles.analyticNumber}>{analytics.pointsEarned}</Text>
-              <Text style={styles.analyticLabel}>Points Earned</Text>
-            </View>
-            <View style={styles.analyticItem}>
-              <Text style={styles.analyticNumber}>{analytics.badgesEarned}</Text>
-              <Text style={styles.analyticLabel}>Badges Earned</Text>
+        {/* Ticket Statistics */}
+        <View style={styles.statsCard}>
+          <Text style={styles.sectionTitle}>Your Tickets</Text>
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{user.tickets?.length || 0}</Text>
+              <Text style={styles.statLabel}>Tickets Reported</Text>
             </View>
           </View>
-        </View>
-
-        {/* Menu Options */}
-        <View style={styles.menuSection}>
-          <ThemeToggle />
-          
-          <TouchableOpacity style={styles.menuItem} onPress={handleSettings}>
-            <View style={styles.menuItemLeft}>
-              <IconSymbol name="gear" size={24} color={Colors[colorScheme].text} />
-              <Text style={styles.menuItemText}>Settings</Text>
-            </View>
-            <IconSymbol name="chevron.right" size={20} color={Colors[colorScheme].tabIconDefault} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem} onPress={handleContactSupport}>
-            <View style={styles.menuItemLeft}>
-              <IconSymbol name="questionmark.circle" size={24} color={Colors[colorScheme].text} />
-              <Text style={styles.menuItemText}>Contact Support</Text>
-            </View>
-            <IconSymbol name="chevron.right" size={20} color={Colors[colorScheme].tabIconDefault} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem} onPress={handleAbout}>
-            <View style={styles.menuItemLeft}>
-              <IconSymbol name="info.circle" size={24} color={Colors[colorScheme].text} />
-              <Text style={styles.menuItemText}>About Civix</Text>
-            </View>
-            <IconSymbol name="chevron.right" size={20} color={Colors[colorScheme].tabIconDefault} />
-          </TouchableOpacity>
         </View>
 
         {/* Logout Button */}
@@ -200,22 +185,18 @@ export default function ProfileScreen() {
             <Text style={styles.logoutText}>Logout</Text>
           </TouchableOpacity>
         </View>
-
-        {/* App Version */}
-        <View style={styles.versionSection}>
-          <Text style={styles.versionText}>Civix Version 1.0.0</Text>
-        </View>
       </ScrollView>
 
       {/* Edit Profile Modal */}
       <EditProfileModal
         visible={editModalVisible}
         onClose={() => setEditModalVisible(false)}
-        currentName={user.name || ''}
+        user={user}
       />
     </SafeAreaView>
   );
 }
+
 
 const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
   container: {
@@ -314,6 +295,46 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
     fontSize: 14,
     color: Colors[colorScheme].tabIconDefault,
   },
+  detailsCard: {
+    backgroundColor: Colors[colorScheme].background,
+    borderWidth: 1,
+    borderColor: Colors[colorScheme].tabIconDefault + '30',
+    borderRadius: 16,
+    padding: 20,
+    marginTop: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors[colorScheme].text,
+    marginBottom: 16,
+  },
+  detailRow: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors[colorScheme].tabIconDefault + '20',
+  },
+  detailLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: Colors[colorScheme].tabIconDefault,
+    fontWeight: '500',
+  },
+  detailValue: {
+    fontSize: 16,
+    color: Colors[colorScheme].text,
+    marginBottom: 2,
+  },
+  notEditable: {
+    fontSize: 12,
+    color: Colors[colorScheme].tabIconDefault,
+    fontStyle: 'italic',
+  },
   pointsCard: {
     backgroundColor: Colors[colorScheme].background,
     borderWidth: 1,
@@ -345,7 +366,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
     color: Colors[colorScheme].tabIconDefault,
     textAlign: 'center',
   },
-  analyticsCard: {
+  statsCard: {
     backgroundColor: Colors[colorScheme].background,
     borderWidth: 1,
     borderColor: Colors[colorScheme].tabIconDefault + '30',
@@ -353,65 +374,31 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
     padding: 20,
     marginTop: 16,
   },
-  analyticsTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors[colorScheme].text,
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  analyticsGrid: {
+  statsRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: 16,
+    justifyContent: 'center',
   },
-  analyticItem: {
-    width: '45%',
+  statItem: {
     alignItems: 'center',
     padding: 12,
     backgroundColor: Colors[colorScheme].tabIconDefault + '10',
     borderRadius: 12,
+    minWidth: 120,
   },
-  analyticNumber: {
+  statNumber: {
     fontSize: 24,
     fontWeight: 'bold',
     color: Colors[colorScheme].tint,
     marginBottom: 4,
   },
-  analyticLabel: {
+  statLabel: {
     fontSize: 12,
     color: Colors[colorScheme].tabIconDefault,
     textAlign: 'center',
   },
-  menuSection: {
-    marginTop: 24,
-    backgroundColor: Colors[colorScheme].background,
-    borderWidth: 1,
-    borderColor: Colors[colorScheme].tabIconDefault + '30',
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  menuItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors[colorScheme].tabIconDefault + '20',
-  },
-  menuItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  menuItemText: {
-    fontSize: 16,
-    color: Colors[colorScheme].text,
-  },
   logoutSection: {
     marginTop: 24,
+    marginBottom: 32,
   },
   logoutButton: {
     flexDirection: 'row',
@@ -429,15 +416,6 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
     fontSize: 16,
     color: '#EF4444',
     fontWeight: '600',
-  },
-  versionSection: {
-    marginTop: 24,
-    marginBottom: 32,
-    alignItems: 'center',
-  },
-  versionText: {
-    fontSize: 14,
-    color: Colors[colorScheme].tabIconDefault,
   },
   loadingContainer: {
     flex: 1,

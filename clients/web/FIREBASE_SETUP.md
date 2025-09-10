@@ -62,7 +62,7 @@ This web application now uses Firebase Authentication for admin login. Follow th
 
 All routes except `/login` are protected and require authentication:
 - `/dashboard` - Admin dashboard
-- `/issues` - Issue management
+- `/tickets` - ticket management
 - `/technicians` - Technician management
 - `/map` - Map view (placeholder)
 

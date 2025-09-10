@@ -25,9 +25,9 @@ export default function HomeScreen() {
     resolvedToday: 0,
     inProgress: 0,
   });
-  const [recentTickets, setRecentTickets] = useState([]);
+  const [recentTickets, setRecentTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [fetchingTicketDetails, setFetchingTicketDetails] = useState(false);
 
@@ -54,12 +54,17 @@ export default function HomeScreen() {
           const allTickets = ticketsResponse.tickets || [];
           // Get the 5 most recent tickets
           const recentTicketsRaw = allTickets.slice(0, 5);
-          const transformedTickets = recentTicketsRaw.map(
-            api.transformers.ticketToMobileFormat
-          );
+          const transformedTickets = recentTicketsRaw.map((ticket: any) => {
+            const mobileFormat = api.transformers.ticketToMobileFormat(ticket);
+            // Keep original data for modal access
+            return {
+              ...mobileFormat,
+              _originalTicket: ticket
+            };
+          });
           setRecentTickets(transformedTickets);
-        } catch (error) {
-          console.log("Tickets not available, using sample data");
+        } catch (error: any) {
+          console.log("Tickets not available, using sample data", error);
           // Keep sample data as fallback
           setRecentTickets([]);
         }
@@ -84,8 +89,8 @@ export default function HomeScreen() {
     return "Good Evening";
   };
 
-  const handleReportIssue = () => {
-    router.push("/raise-issue");
+  const handleReportticket = () => {
+    router.push("/raise-ticket");
   };
 
   const handleTicketPress = async (ticket: any) => {
@@ -93,14 +98,50 @@ export default function HomeScreen() {
       setFetchingTicketDetails(true);
       setModalVisible(true);
       
-      // Fetch fresh ticket details from the server
-      const freshTicketResponse = await ticketsAPI.getTicket(ticket._id);
+      // If we have the original ticket data, use it directly
+      if (ticket._originalTicket) {
+        setSelectedTicket(ticket._originalTicket);
+        setFetchingTicketDetails(false);
+        return;
+      }
+      
+      // Try to fetch fresh ticket details from the server using the original ticket ID
+      const ticketId = ticket._id || ticket.id;
+      const freshTicketResponse = await ticketsAPI.getTicket(ticketId);
       console.log('Fresh ticket data:', freshTicketResponse.ticket);
       setSelectedTicket(freshTicketResponse.ticket);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch ticket details:', error);
-      // Fallback to the ticket data we have
-      setSelectedTicket(ticket);
+      
+      // Fallback: Convert the mobile format ticket back to server format for the modal
+      const fallbackTicket = {
+        _id: ticket._id || ticket.id,
+        creator_name: ticket.creatorName || 'Unknown',
+        creator_id: ticket.creatorId || 'unknown',
+        status: ticket.actualStatus || ticket.status || 'open',
+        ticket_name: ticket.title,
+        ticket_category: ticket.category,
+        ticket_description: ticket.description,
+        image_url: ticket.imageUrl || null,
+        tags: ticket.tags || [],
+        votes: {
+          upvotes: ticket.upvotes || 0,
+          downvotes: ticket.downvotes || 0
+        },
+        urgency: ticket.status === 'red' ? 'critical' : 
+                 ticket.status === 'orange' ? 'moderate' : 'low',
+        location: {
+          latitude: parseFloat(ticket.location?.split(',')[0]) || 0,
+          longitude: parseFloat(ticket.location?.split(',')[1]) || 0
+        },
+        opening_time: ticket.timestamp,
+        createdAt: ticket.timestamp,
+        updatedAt: ticket.timestamp,
+        closing_time: null,
+        authority: null
+      };
+      
+      setSelectedTicket(fallbackTicket);
       Alert.alert('Warning', 'Could not load latest ticket details. Showing cached data.');
     } finally {
       setFetchingTicketDetails(false);
@@ -142,7 +183,7 @@ export default function HomeScreen() {
     }
   };
 
-  const styles = createStyles(colorScheme);
+  const styles = createStyles(colorScheme ?? 'light');
 
   if (loading) {
     return (
@@ -187,7 +228,7 @@ export default function HomeScreen() {
           </View>
           <Text style={styles.pointsValue}>{user.points}</Text>
           <Text style={styles.pointsSubtext}>
-            Keep reporting issues to earn more points!
+            Keep reporting tickets to earn more points!
           </Text>
         </View>
 
@@ -195,10 +236,10 @@ export default function HomeScreen() {
         <View style={styles.actionSection}>
           <TouchableOpacity
             style={styles.primaryButton}
-            onPress={handleReportIssue}
+            onPress={handleReportticket}
           >
             <IconSymbol name="plus.circle.fill" size={24} color="white" />
-            <Text style={styles.primaryButtonText}>Report Issue</Text>
+            <Text style={styles.primaryButtonText}>Report ticket</Text>
           </TouchableOpacity>
         </View>
 
@@ -212,7 +253,7 @@ export default function HomeScreen() {
               onPress={() => handleTicketPress(ticket)}
             >
               <View style={styles.ticketHeader}>
-                <Text style={styles.ticketTitle}>{ticket.title || ticket.issue_name}</Text>
+                <Text style={styles.ticketTitle}>{ticket.title || ticket.ticket_name}</Text>
                 <View
                   style={[
                     styles.statusBadge,

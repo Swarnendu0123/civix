@@ -57,7 +57,7 @@ Both web and mobile clients have been updated to use the new server API endpoint
 ### Data Format Changes
 
 #### Tickets
-- Server expects: `{ creator_id, creator_name, issue_name, issue_category, issue_description, location: { latitude, longitude } }`
+- Server expects: `{ creator_id, creator_name, ticket_name, ticket_category, ticket_description, location: { latitude, longitude } }`
 - Server returns: `{ tickets: [...] }` with populated creator and authority data
 
 #### Users
@@ -99,12 +99,12 @@ curl http://localhost:3000/api/ticket/all
 
 #### Web Client (http://localhost:5173)
 - Dashboard loads with analytics and recent tickets
-- Issue management shows all tickets from server
+- ticket management shows all tickets from server
 - Ticket creation works with new API format
 
 #### Mobile App (http://localhost:8081)
 - Home screen displays recent tickets from server
-- Raise issue form submits to new API endpoint
+- Raise ticket form submits to new API endpoint
 - My tickets filters tickets by current user
 
 ## Key Implementation Details
@@ -115,7 +115,7 @@ curl http://localhost:3000/api/ticket/all
 - Loading states during API calls
 
 ### Data Transformation
-- `transformers.ticketToIssue()` - Server ticket → UI Issue format
+- `transformers.ticketToticket()` - Server ticket → UI ticket format
 - `transformers.ticketToMobileFormat()` - Server ticket → Mobile format
 - `transformers.uiToTicketAPI()` - UI form data → Server format
 

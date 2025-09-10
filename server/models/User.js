@@ -43,7 +43,7 @@ const userSchema = new mongoose.Schema({
     default: false
   },
   // Automatically updated
-  issues: [{
+  tickets: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Ticket'
   }],

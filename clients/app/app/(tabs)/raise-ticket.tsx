@@ -19,12 +19,12 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useAuth } from '@/hooks/useAuth';
 import api from '@/services/api';
 
-export default function RaiseIssueScreen() {
+export default function Raiseticketscreen() {
   const { colorScheme } = useTheme();
   const { user } = useAuth();
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [description, setDescription] = useState('');
-  const [issueTitle, setIssueTitle] = useState('');
+  const [ticketTitle, setticketTitle] = useState('');
   const [location, setLocation] = useState<{
     latitude: number;
     longitude: number;
@@ -32,11 +32,11 @@ export default function RaiseIssueScreen() {
   } | null>(null);
   const [locationLoading, setLocationLoading] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [selectedIssueType, setSelectedIssueType] = useState<string>('');
+  const [selectedticketType, setSelectedticketType] = useState<string>('');
   const [selectedUrgency, setSelectedUrgency] = useState<'critical' | 'moderate' | 'low'>('moderate');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const issueTypes = [
+  const ticketTypes = [
     'sanitation',
     'electricity', 
     'water',
@@ -53,7 +53,7 @@ export default function RaiseIssueScreen() {
   const availableTags = [
     'Urgent',
     'Safety Concern',
-    'Quality Issue',
+    'Quality ticket',
     'Infrastructure',
     'Environment',
     'Public Health',
@@ -68,7 +68,7 @@ export default function RaiseIssueScreen() {
       if (status !== 'granted') {
         Alert.alert(
           'Permission Required',
-          'Location permission is required to report issues accurately. Please enable location access.',
+          'Location permission is required to report tickets accurately. Please enable location access.',
           [
             { text: 'Cancel', style: 'cancel' },
             { text: 'Try Again', onPress: getCurrentLocation }
@@ -180,18 +180,18 @@ export default function RaiseIssueScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!issueTitle.trim()) {
-      Alert.alert('Error', 'Please provide a title for the issue');
+    if (!ticketTitle.trim()) {
+      Alert.alert('Error', 'Please provide a title for the ticket');
       return;
     }
     
     if (!description.trim()) {
-      Alert.alert('Error', 'Please provide a description of the issue');
+      Alert.alert('Error', 'Please provide a description of the ticket');
       return;
     }
     
-    if (!selectedIssueType) {
-      Alert.alert('Error', 'Please select an issue type');
+    if (!selectedticketType) {
+      Alert.alert('Error', 'Please select an ticket type');
       return;
     }
 
@@ -224,9 +224,9 @@ export default function RaiseIssueScreen() {
         creator_id: currentUser._id || currentUser.id || currentUser.uid,
         creator_name: currentUser.name || 'Anonymous User',
         creator_email: currentUser.email || undefined, // Add email for backend user lookup/creation
-        issue_name: issueTitle,
-        issue_description: description,
-        issue_category: selectedIssueType,
+        ticket_name: ticketTitle,
+        ticket_description: description,
+        ticket_category: selectedticketType,
         image_url: imageUri || undefined,
         tags: selectedTags,
         urgency: selectedUrgency,
@@ -241,34 +241,34 @@ export default function RaiseIssueScreen() {
       const response = await api.tickets.createTicket(ticketData);
 
       // Prepare success message
-      let successMessage = 'Your civic issue has been reported successfully!';
+      let successMessage = 'Your civic ticket has been reported successfully!';
       let additionalInfo = '';
 
       if (response.ticket) {
-        additionalInfo = `✅ Your issue has been recorded with ID: ${response.ticket._id}`;
+        additionalInfo = `✅ Your ticket has been recorded with ID: ${response.ticket._id}`;
       } else {
-        additionalInfo = `📋 Your issue is now in the system for review.`;
+        additionalInfo = `📋 Your ticket is now in the system for review.`;
       }
 
       Alert.alert(
-        'Issue Submitted',
+        'ticket Submitted',
         `${successMessage}\n\n${additionalInfo}\n\nYou will be notified of all updates.`,
         [{ text: 'OK', onPress: () => {
           // Reset form
-          setIssueTitle('');
+          setticketTitle('');
           setDescription('');
           setImageUri(null);
           setSelectedTags([]);
-          setSelectedIssueType('');
+          setSelectedticketType('');
           setSelectedUrgency('moderate');
-          // Don't reset location as user might be reporting multiple issues from same place
+          // Don't reset location as user might be reporting multiple tickets from same place
         }}]
       );
     } catch (error) {
-      console.error('Error submitting issue:', error);
+      console.error('Error submitting ticket:', error);
       Alert.alert(
         'Submission Failed',
-        `Failed to submit your issue: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
+        `Failed to submit your ticket: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
         [{ text: 'OK' }]
       );
     } finally {
@@ -282,7 +282,7 @@ export default function RaiseIssueScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Report Issue</Text>
+        <Text style={styles.title}>Report ticket</Text>
         <Text style={styles.subtitle}>Help make your community better</Text>
       </View>
 
@@ -309,13 +309,13 @@ export default function RaiseIssueScreen() {
 
         {/* Title Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Issue Title</Text>
+          <Text style={styles.sectionTitle}>ticket Title</Text>
           <TextInput
             style={styles.titleInput}
-            placeholder="Brief title for the issue..."
+            placeholder="Brief title for the ticket..."
             placeholderTextColor={Colors[colorScheme].tabIconDefault}
-            value={issueTitle}
-            onChangeText={setIssueTitle}
+            value={ticketTitle}
+            onChangeText={setticketTitle}
           />
         </View>
 
@@ -324,7 +324,7 @@ export default function RaiseIssueScreen() {
           <Text style={styles.sectionTitle}>Description</Text>
           <TextInput
             style={styles.descriptionInput}
-            placeholder="Describe the issue in detail..."
+            placeholder="Describe the ticket in detail..."
             placeholderTextColor={Colors[colorScheme].tabIconDefault}
             value={description}
             onChangeText={setDescription}
@@ -334,31 +334,31 @@ export default function RaiseIssueScreen() {
           />
         </View>
 
-        {/* Issue Type Section */}
+        {/* ticket Type Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Issue Type</Text>
-          <Text style={styles.sectionSubtitle}>Select the main category for this issue</Text>
-          <View style={styles.issueTypeContainer}>
-            {issueTypes.map((type) => (
+          <Text style={styles.sectionTitle}>ticket Type</Text>
+          <Text style={styles.sectionSubtitle}>Select the main category for this ticket</Text>
+          <View style={styles.ticketTypeContainer}>
+            {ticketTypes.map((type) => (
               <TouchableOpacity
                 key={type}
                 style={[
-                  styles.issueTypeOption,
-                  selectedIssueType === type && styles.issueTypeOptionSelected
+                  styles.ticketTypeOption,
+                  selectedticketType === type && styles.ticketTypeOptionSelected
                 ]}
-                onPress={() => setSelectedIssueType(type)}
+                onPress={() => setSelectedticketType(type)}
               >
                 <View style={[
                   styles.radioButton,
-                  selectedIssueType === type && styles.radioButtonSelected
+                  selectedticketType === type && styles.radioButtonSelected
                 ]}>
-                  {selectedIssueType === type && (
+                  {selectedticketType === type && (
                     <View style={styles.radioButtonInner} />
                   )}
                 </View>
                 <Text style={[
-                  styles.issueTypeText,
-                  selectedIssueType === type && styles.issueTypeTextSelected
+                  styles.ticketTypeText,
+                  selectedticketType === type && styles.ticketTypeTextSelected
                 ]}>
                   {type.charAt(0).toUpperCase() + type.slice(1)}
                 </Text>
@@ -367,11 +367,11 @@ export default function RaiseIssueScreen() {
           </View>
           
           {/* Smart Classification Info */}
-          {selectedIssueType === 'other' && (
+          {selectedticketType === 'other' && (
             <View style={styles.smartClassificationInfo}>
               <IconSymbol name="brain.head.profile" size={20} color="#8B5CF6" />
               <Text style={styles.smartClassificationText}>
-                AI will analyze your description to automatically classify this issue into the appropriate category
+                AI will analyze your description to automatically classify this ticket into the appropriate category
               </Text>
             </View>
           )}
@@ -380,7 +380,7 @@ export default function RaiseIssueScreen() {
         {/* Urgency Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Priority Level</Text>
-          <Text style={styles.sectionSubtitle}>How urgent is this issue?</Text>
+          <Text style={styles.sectionSubtitle}>How urgent is this ticket?</Text>
           <View style={styles.urgencyContainer}>
             {urgencyLevels.map((urgency) => (
               <TouchableOpacity
@@ -487,7 +487,7 @@ export default function RaiseIssueScreen() {
               <IconSymbol name="paperplane.fill" size={24} color="white" />
             )}
             <Text style={styles.submitButtonText}>
-              {isSubmitting ? 'Submitting...' : 'Submit Issue'}
+              {isSubmitting ? 'Submitting...' : 'Submit ticket'}
             </Text>
           </TouchableOpacity>
           
@@ -679,10 +679,10 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
     color: 'white',
     fontWeight: '600',
   },
-  issueTypeContainer: {
+  ticketTypeContainer: {
     gap: 12,
   },
-  issueTypeOption: {
+  ticketTypeOption: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
@@ -693,7 +693,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
     borderColor: Colors[colorScheme].tabIconDefault + '30',
     gap: 12,
   },
-  issueTypeOptionSelected: {
+  ticketTypeOptionSelected: {
     backgroundColor: '#3B82F6' + '15',
     borderColor: '#3B82F6',
   },
@@ -715,12 +715,12 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
     borderRadius: 5,
     backgroundColor: '#3B82F6',
   },
-  issueTypeText: {
+  ticketTypeText: {
     fontSize: 16,
     color: Colors[colorScheme].text,
     flex: 1,
   },
-  issueTypeTextSelected: {
+  ticketTypeTextSelected: {
     color: '#3B82F6',
     fontWeight: '600',
   },

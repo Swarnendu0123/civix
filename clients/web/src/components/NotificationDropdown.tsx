@@ -11,7 +11,7 @@ import api from '../services/api';
 
 interface Notification {
   _id: string;
-  type: 'ticket' | 'user' | 'system' | 'issue_unclassified' | 'llm_assignment_pending' | 'no_technicians_available' | 'manual_assignment_required';
+  type: 'ticket' | 'user' | 'system' | 'ticket_unclassified' | 'llm_assignment_pending' | 'no_technicians_available' | 'manual_assignment_required';
   title: string;
   message: string;
   data: any;
@@ -70,7 +70,7 @@ const NotificationDropdown: React.FC = () => {
         return <FiUsers className="h-5 w-5 text-blue-500" />;
       case 'system':
         return <FiClock className="h-5 w-5 text-gray-500" />;
-      case 'issue_unclassified':
+      case 'ticket_unclassified':
         return <FiAlertCircle className="h-5 w-5 text-orange-500" />;
       case 'llm_assignment_pending':
         return <FiUser className="h-5 w-5 text-purple-500" />;
@@ -225,12 +225,12 @@ const NotificationDropdown: React.FC = () => {
                         </p>
                         {notification.actionable && (
                           <div className="mt-2 flex space-x-2">
-                            {notification.type === 'issue_unclassified' && (
+                            {notification.type === 'ticket_unclassified' && (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   // Handle manual classification
-                                  window.location.href = `/issues/${notification.data.ticketId}`;
+                                  window.location.href = `/tickets/${notification.data.ticketId}`;
                                 }}
                                 className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
                               >
@@ -243,7 +243,7 @@ const NotificationDropdown: React.FC = () => {
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     // Handle assignment approval
-                                    window.location.href = `/issues/${notification.data.ticketId}?action=approve`;
+                                    window.location.href = `/tickets/${notification.data.ticketId}?action=approve`;
                                   }}
                                   className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700"
                                 >
@@ -253,7 +253,7 @@ const NotificationDropdown: React.FC = () => {
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     // Handle assignment rejection
-                                    window.location.href = `/issues/${notification.data.ticketId}?action=manual`;
+                                    window.location.href = `/tickets/${notification.data.ticketId}?action=manual`;
                                   }}
                                   className="text-xs bg-gray-600 text-white px-2 py-1 rounded hover:bg-gray-700"
                                 >
@@ -266,7 +266,7 @@ const NotificationDropdown: React.FC = () => {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   // Handle manual assignment
-                                  window.location.href = `/issues/${notification.data.ticketId}?action=assign`;
+                                  window.location.href = `/tickets/${notification.data.ticketId}?action=assign`;
                                 }}
                                 className="text-xs bg-orange-600 text-white px-2 py-1 rounded hover:bg-orange-700"
                               >

@@ -5,7 +5,7 @@ import { useAuth } from './hooks/useAuth';
 import Layout from './components/Layout/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import IssueManagement from './pages/IssueManagement';
+import ticketManagement from './pages/ticketManagement';
 import TechnicianManagement from './pages/TechnicianManagement';
 import UserManagement from './pages/UserManagement';
 import './App.css';
@@ -39,7 +39,7 @@ const App: React.FC = () => {
             >
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
-              <Route path="issues" element={<IssueManagement />} />
+              <Route path="tickets" element={<ticketManagement />} />
               <Route path="technicians" element={<TechnicianManagement />} />
               <Route path="users" element={<UserManagement />} />
               {/* Placeholder for Map route */}
@@ -48,7 +48,7 @@ const App: React.FC = () => {
                 element={
                   <div className="text-center py-12">
                     <h2 className="text-2xl font-bold text-gray-900">Map View</h2>
-                    <p className="mt-2 text-gray-500">Coming Soon - Map visualization of issues</p>
+                    <p className="mt-2 text-gray-500">Coming Soon - Map visualization of tickets</p>
                   </div>
                 } 
               />

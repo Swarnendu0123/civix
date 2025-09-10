@@ -229,7 +229,7 @@ npm run preview
 # Run linter
 npm run lint
 
-# Fix linting issues
+# Fix linting tickets
 npm run lint -- --fix
 ```
 
@@ -333,7 +333,7 @@ npm run seed
 
 This creates:
 - Sample users (citizens, technicians, administrators)
-- Sample civic issues
+- Sample civic tickets
 - Sample authorities and departments
 - Geographic test data
 
@@ -541,7 +541,7 @@ mongodump --db civix --out /backup/$(date +%Y%m%d)
 
 ## Troubleshooting
 
-### Common Installation Issues
+### Common Installation tickets
 
 #### Node.js Version Mismatch
 ```bash
@@ -562,7 +562,7 @@ sudo chown -R $(whoami) ~/.npm
 npx kill-port 3000 5173 8081
 ```
 
-#### MongoDB Connection Issues
+#### MongoDB Connection tickets
 ```bash
 # Check MongoDB status
 sudo systemctl status mongod
@@ -580,7 +580,7 @@ rm -rf node_modules/.cache
 npx tsc --build --clean
 ```
 
-#### Expo/React Native Issues
+#### Expo/React Native tickets
 ```bash
 # Clear Expo cache
 npx expo install --fix
@@ -590,7 +590,7 @@ npm install
 
 ### Getting Support
 
-- **GitHub Issues**: [Report bugs](https://github.com/swrno/civix/issues)
+- **GitHub tickets**: [Report bugs](https://github.com/swrno/civix/tickets)
 - **Documentation**: Browse this comprehensive guide
 - **Community**: Join discussions on GitHub
 - **Email**: Contact the development team

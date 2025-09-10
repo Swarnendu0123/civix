@@ -1,15 +1,15 @@
 // API service for Civix mobile app
 // Load from environment variable or default to localhost
-// In web mode, use the current origin to avoid CORS issues
+// In web mode, use the current origin to avoid CORS tickets
 const getApiBaseUrl = () => {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     // Running in web browser - use current origin with port 3000
     const protocol = window.location.protocol;
     const hostname = window.location.hostname;
     return `${protocol}//${hostname}:3000`;
   }
   // Running in React Native - use localhost
-  return process.env.BACKEND_URL || 'http://localhost:3000';
+  return process.env.BACKEND_URL || "http://localhost:3000";
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -29,12 +29,12 @@ export const getCurrentUser = () => {
 // Helper function to make API requests
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
-  
+
   console.log(`Making API request to: ${url}`);
-  console.log('Request options:', options);
-  
+  console.log("Request options:", options);
+
   const headers: HeadersInit = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
     ...options.headers,
   };
 
@@ -48,24 +48,26 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('API Error Response:', errorText);
-      
+      console.error("API Error Response:", errorText);
+
       let error;
       try {
         error = JSON.parse(errorText);
       } catch {
-        error = { error: errorText || 'API request failed' };
+        error = { error: errorText || "API request failed" };
       }
-      throw new Error(error.error || 'API request failed');
+      throw new Error(error.error || "API request failed");
     }
 
     const data = await response.json();
-    console.log('API Response:', data);
+    console.log("API Response:", data);
     return data;
   } catch (error) {
-    console.error('API Request Error:', error);
-    if (error instanceof TypeError && error.message.includes('fetch')) {
-      throw new Error('Network error: Cannot connect to server. Please check if the server is running.');
+    console.error("API Request Error:", error);
+    if (error instanceof TypeError && error.message.includes("fetch")) {
+      throw new Error(
+        "Network error: Cannot connect to server. Please check if the server is running."
+      );
     }
     throw error;
   }
@@ -73,27 +75,34 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
 
 // User Management API (matches server implementation)
 export const userAPI = {
-  async register(email: string, password: string, name?: string, phone?: string, address?: string, location?: { latitude: number; longitude: number }) {
+  async register(
+    email: string,
+    password: string,
+    name?: string,
+    phone?: string,
+    address?: string,
+    location?: { latitude: number; longitude: number }
+  ) {
     try {
-      const response = await apiRequest('/api/user/register', {
-        method: 'POST',
-        body: JSON.stringify({ 
-          email, 
-          password, 
-          name: name || null, 
-          phone: phone || null, 
-          address: address || null, 
-          location: location || null 
+      const response = await apiRequest("/api/user/register", {
+        method: "POST",
+        body: JSON.stringify({
+          email,
+          password,
+          name: name || null,
+          phone: phone || null,
+          address: address || null,
+          location: location || null,
         }),
       });
-      
+
       if (response.user) {
         setCurrentUser(response.user);
       }
-      
+
       return response;
     } catch (error) {
-      console.error('User registration failed:', error);
+      console.error("User registration failed:", error);
       throw error;
     }
   },
@@ -105,55 +114,76 @@ export const userAPI = {
       const userData = {
         email: firebaseUser.email,
         password: firebaseUser.uid, // Use Firebase UID as password for backend sync
-        name: firebaseUser.displayName || 'User'
+        name: firebaseUser.displayName || "User",
       };
 
       try {
-        const response = await this.register(userData.email, userData.password, userData.name);
+        const response = await this.register(
+          userData.email,
+          userData.password,
+          userData.name
+        );
         return response.user;
       } catch (error) {
-        if (error instanceof Error && error.message.includes('already exists')) {
+        if (
+          error instanceof Error &&
+          error.message.includes("already exists")
+        ) {
           // User already exists, create a user object with Firebase data
           // In a real app, you'd implement a proper find endpoint
           return {
             _id: firebaseUser.uid,
             email: firebaseUser.email,
-            name: firebaseUser.displayName || 'User',
-            role: 'user',
-            points: 0
+            name: firebaseUser.displayName || "User",
+            role: "user",
+            points: 0,
           };
         }
         throw error;
       }
     } catch (error) {
-      console.error('Find or create user failed:', error);
+      console.error("Find or create user failed:", error);
       throw error;
     }
   },
 
-  async updateDetails(email: string, data: { name?: string; phone?: string; address?: string; location?: { latitude: number; longitude: number } }) {
-    const response = await apiRequest(`/api/user/update/details/${encodeURIComponent(email)}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-    
+  async updateDetails(
+    email: string,
+    data: {
+      name?: string;
+      phone?: string;
+      address?: string;
+      location?: { latitude: number; longitude: number };
+    }
+  ) {
+    const response = await apiRequest(
+      `/api/user/update/details/${encodeURIComponent(email)}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }
+    );
+
     if (response.user) {
       setCurrentUser(response.user);
     }
-    
+
     return response;
   },
 
   async updateRole(email: string, role: string, isTechnician?: boolean) {
-    const response = await apiRequest(`/api/user/update/role/${encodeURIComponent(email)}`, {
-      method: 'PUT',
-      body: JSON.stringify({ role, isTechnician }),
-    });
-    
+    const response = await apiRequest(
+      `/api/user/update/role/${encodeURIComponent(email)}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ role, isTechnician }),
+      }
+    );
+
     if (response.user) {
       setCurrentUser(response.user);
     }
-    
+
     return response;
   },
 
@@ -165,22 +195,26 @@ export const userAPI = {
     // Create a demo user for testing purposes
     const demoUser = {
       email: `demo_${Date.now()}@civix.app`,
-      password: 'demopassword',
-      name: 'Demo User'
+      password: "demopassword",
+      name: "Demo User",
     };
 
     try {
-      const response = await this.register(demoUser.email, demoUser.password, demoUser.name);
+      const response = await this.register(
+        demoUser.email,
+        demoUser.password,
+        demoUser.name
+      );
       return response.user;
     } catch (error) {
-      console.error('Demo user creation failed:', error);
+      console.error("Demo user creation failed:", error);
       throw error;
     }
   },
 
   logout() {
     setCurrentUser(null);
-  }
+  },
 };
 
 // Legacy auth API for backward compatibility
@@ -188,23 +222,31 @@ export const authAPI = {
   async login(email: string, password: string) {
     // Server doesn't have login endpoint, so we'll simulate by getting user info
     // In a real app, you'd implement proper authentication on the server
-    throw new Error('Login functionality requires server-side authentication implementation');
+    throw new Error(
+      "Login functionality requires server-side authentication implementation"
+    );
   },
 
-  async register(name: string, email: string, password: string, role: string = 'user', firebaseUid?: string) {
+  async register(
+    name: string,
+    email: string,
+    password: string,
+    role: string = "user",
+    firebaseUid?: string
+  ) {
     return userAPI.register(email, password, name);
   },
 
   logout() {
     userAPI.logout();
-  }
+  },
 };
 
 // Health check API
 export const healthAPI = {
   async checkHealth() {
-    return apiRequest('/health');
-  }
+    return apiRequest("/health");
+  },
 };
 
 // Legacy Analytics API (server doesn't implement these yet)
@@ -213,21 +255,25 @@ export const analyticsAPI = {
     // Mock analytics based on ticket data
     const tickets = await ticketsAPI.getTickets();
     const allTickets = tickets.tickets || [];
-    
+
     return {
       totalTickets: allTickets.length,
-      openTickets: allTickets.filter((t: any) => t.status === 'open').length,
-      resolvedTickets: allTickets.filter((t: any) => t.status === 'resolved').length,
-      inProgressTickets: allTickets.filter((t: any) => t.status === 'in process').length,
-      criticalTickets: allTickets.filter((t: any) => t.urgency === 'critical').length,
+      openTickets: allTickets.filter((t: any) => t.status === "open").length,
+      resolvedTickets: allTickets.filter((t: any) => t.status === "resolved")
+        .length,
+      inProgressTickets: allTickets.filter(
+        (t: any) => t.status === "in process"
+      ).length,
+      criticalTickets: allTickets.filter((t: any) => t.urgency === "critical")
+        .length,
     };
-  }
+  },
 };
 
 // Tickets API (matches server implementation)
 export const ticketsAPI = {
   async getTickets() {
-    const response = await apiRequest('/api/ticket/all');
+    const response = await apiRequest("/api/ticket/all");
     return response;
   },
 
@@ -235,35 +281,7 @@ export const ticketsAPI = {
     try {
       return await apiRequest(`/api/ticket/${id}`);
     } catch (error) {
-      console.warn('Server not available, using mock data');
-      // Mock data matching the database structure you provided
-      return {
-        ticket: {
-          _id: id,
-          creator_id: "shuvradeepbera2005@gmail.com",
-          creator_name: "Shuvradeep Bera",
-          status: "open",
-          issue_name: "Water Pipeline Issue - Test",
-          issue_category: "water",
-          issue_description: "There is a major water leakage in the main pipeline near the residential area. This needs immediate attention as it's affecting multiple households.",
-          image_url: null,
-          tags: ["urgent", "infrastructure", "water"],
-          votes: {
-            upvotes: 15,
-            downvotes: 2
-          },
-          urgency: "critical",
-          location: {
-            latitude: 22.3215693,
-            longitude: 87.3017214,
-          },
-          closing_time: null,
-          authority: null,
-          opening_time: "2025-09-10T10:06:59.490Z",
-          createdAt: "2025-09-10T10:06:59.500Z",
-          updatedAt: "2025-09-10T10:06:59.500Z",
-        }
-      };
+      console.error("Server not available, using mock data");
     }
   },
 
@@ -271,16 +289,16 @@ export const ticketsAPI = {
     creator_id: string;
     creator_name: string;
     creator_email?: string;
-    issue_name: string;
-    issue_category: string;
-    issue_description: string;
+    ticket_name: string;
+    ticket_category: string;
+    ticket_description: string;
     image_url?: string;
     tags?: string[];
-    urgency?: 'critical' | 'moderate' | 'low';
+    urgency?: "critical" | "moderate" | "low";
     location: { latitude: number; longitude: number };
   }) {
-    return apiRequest('/api/ticket/create', {
-      method: 'POST',
+    return apiRequest("/api/ticket/create", {
+      method: "POST",
       body: JSON.stringify(data),
     });
   },
@@ -289,9 +307,9 @@ export const ticketsAPI = {
     // Convert FormData to JSON format expected by server
     const data: any = {};
     formData.forEach((value, key) => {
-      if (key === 'location') {
+      if (key === "location") {
         data[key] = JSON.parse(value as string);
-      } else if (key === 'tags') {
+      } else if (key === "tags") {
         data[key] = JSON.parse(value as string);
       } else {
         data[key] = value;
@@ -301,40 +319,53 @@ export const ticketsAPI = {
     return this.createTicket(data);
   },
 
-  async updateTicket(id: string, data: {
-    status?: 'open' | 'resolved' | 'in process';
-    issue_name?: string;
-    issue_category?: string;
-    issue_description?: string;
-    image_url?: string;
-    tags?: string[];
-    votes?: { upvotes: number; downvotes: number };
-    urgency?: 'critical' | 'moderate' | 'low';
-    location?: { latitude: number; longitude: number };
-    authority?: string;
-  }) {
+  async updateTicket(
+    id: string,
+    data: {
+      status?: "open" | "resolved" | "in process";
+      ticket_name?: string;
+      ticket_category?: string;
+      ticket_description?: string;
+      image_url?: string;
+      tags?: string[];
+      votes?: { upvotes: number; downvotes: number };
+      urgency?: "critical" | "moderate" | "low";
+      location?: { latitude: number; longitude: number };
+      authority?: string;
+    }
+  ) {
     return apiRequest(`/api/ticket/update/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(data),
     });
   },
 
-  async voteTicket(id: string, type: 'upvote' | 'downvote') {
+  async voteTicket(id: string, type: "upvote" | "downvote") {
     // Get current ticket to update votes
     const currentTicket = await this.getTicket(id);
-    const currentVotes = currentTicket.ticket.votes || { upvotes: 0, downvotes: 0 };
-    
+    const currentVotes = currentTicket.ticket.votes || {
+      upvotes: 0,
+      downvotes: 0,
+    };
+
     const newVotes = {
-      upvotes: type === 'upvote' ? currentVotes.upvotes + 1 : currentVotes.upvotes,
-      downvotes: type === 'downvote' ? currentVotes.downvotes + 1 : currentVotes.downvotes
+      upvotes:
+        type === "upvote" ? currentVotes.upvotes + 1 : currentVotes.upvotes,
+      downvotes:
+        type === "downvote"
+          ? currentVotes.downvotes + 1
+          : currentVotes.downvotes,
     };
 
     return this.updateTicket(id, { votes: newVotes });
   },
 
-  async updateTicketStatus(id: string, status: 'open' | 'resolved' | 'in process') {
+  async updateTicketStatus(
+    id: string,
+    status: "open" | "resolved" | "in process"
+  ) {
     return this.updateTicket(id, { status });
-  }
+  },
 };
 
 // Technicians API (limited functionality without full server implementation)
@@ -343,15 +374,16 @@ export const techniciansAPI = {
     // Get users with technician role from tickets
     const tickets = await ticketsAPI.getTickets();
     const allTickets = tickets.tickets || [];
-    
+
     // Extract unique authorities/technicians
     const technicians = allTickets
       .filter((t: any) => t.authority)
       .map((t: any) => t.authority)
-      .filter((tech: any, index: number, arr: any[]) => 
-        arr.findIndex(t => t._id === tech._id) === index
+      .filter(
+        (tech: any, index: number, arr: any[]) =>
+          arr.findIndex((t) => t._id === tech._id) === index
       );
-    
+
     return { technicians };
   },
 
@@ -359,7 +391,7 @@ export const techniciansAPI = {
     const techList = await this.getTechnicians();
     const technician = techList.technicians.find((t: any) => t._id === id);
     if (!technician) {
-      throw new Error('Technician not found');
+      throw new Error("Technician not found");
     }
     return { technician };
   },
@@ -367,15 +399,17 @@ export const techniciansAPI = {
   async getTechnicianTasks(id: string, status?: string) {
     const tickets = await ticketsAPI.getTickets();
     const allTickets = tickets.tickets || [];
-    
-    let tasks = allTickets.filter((t: any) => t.authority && t.authority._id === id);
-    
+
+    let tasks = allTickets.filter(
+      (t: any) => t.authority && t.authority._id === id
+    );
+
     if (status) {
       tasks = tasks.filter((t: any) => t.status === status);
     }
-    
+
     return { tasks };
-  }
+  },
 };
 
 // File upload API (server doesn't implement this yet)
@@ -384,29 +418,29 @@ export const uploadAPI = {
     // For now, return a mock URL since server doesn't implement file upload
     // In production, you'd implement file upload on the server
     const filename = file.name || `image_${Date.now()}.jpg`;
-    
+
     // For React Native, we might get a URI instead of File object
-    if (typeof file === 'string') {
+    if (typeof file === "string") {
       return {
         url: file, // Use the local URI directly
         filename: filename,
-        size: 0
+        size: 0,
       };
     }
-    
+
     return {
       url: file.uri || `data:image/jpeg;base64,${await fileToBase64(file)}`,
       filename: filename,
-      size: file.size || 0
+      size: file.size || 0,
     };
-  }
+  },
 };
 
 // Helper function to convert file to base64 (for React Native)
 const fileToBase64 = async (file: any): Promise<string> => {
   // This would need to be implemented using react-native file system
   // For now, return empty string
-  return '';
+  return "";
 };
 
 // Utility functions to transform data for mobile app format
@@ -414,48 +448,54 @@ export const transformers = {
   // Transform API ticket to mobile app format
   ticketToMobileFormat: (ticket: any) => ({
     id: ticket._id,
-    title: ticket.issue_name,
-    description: ticket.issue_description,
-    category: ticket.issue_category,
+    title: ticket.ticket_name,
+    description: ticket.ticket_description,
+    category: ticket.ticket_category,
     location: `${ticket.location.latitude}, ${ticket.location.longitude}`,
-    timestamp: new Date(ticket.opening_time || ticket.createdAt).toLocaleString(),
+    timestamp: new Date(
+      ticket.opening_time || ticket.createdAt
+    ).toLocaleString(),
     upvotes: ticket.votes?.upvotes || 0,
-    distance: '0.5 km', // Would calculate based on user location
+    distance: "0.5 km", // Would calculate based on user location
     status: ticket.urgency,
-    statusColor: ticket.urgency === 'critical' ? 'red' : 
-                 ticket.urgency === 'moderate' ? 'orange' : 'green',
-    actualStatus: ticket.status
+    statusColor:
+      ticket.urgency === "critical"
+        ? "red"
+        : ticket.urgency === "moderate"
+        ? "orange"
+        : "green",
+    actualStatus: ticket.status,
   }),
 
   // Transform API task to mobile format for technicians
   taskToMobileFormat: (task: any) => ({
     id: task._id,
-    title: task.issue_name,
-    description: task.issue_description,
+    title: task.ticket_name,
+    description: task.ticket_description,
     location: `${task.location.latitude}, ${task.location.longitude}`,
-    category: task.issue_category,
+    category: task.ticket_category,
     urgency: task.urgency,
     status: task.status,
     assignedAt: new Date(task.opening_time || task.createdAt).toLocaleString(),
-    estimatedTime: '2-4 hours', // Would come from backend
-    materialsRequired: ['Basic tools'], // Would come from backend
-    imageUrl: task.image_url
+    estimatedTime: "2-4 hours", // Would come from backend
+    materialsRequired: ["Basic tools"], // Would come from backend
+    imageUrl: task.image_url,
   }),
 
   // Transform UI data to API format for ticket creation
-  uiToTicketAPI: (issueData: any, user: any) => ({
+  uiToTicketAPI: (ticketData: any, user: any) => ({
     creator_id: user.id || user._id,
     creator_name: user.name,
-    issue_name: issueData.title,
-    issue_category: issueData.category,
-    issue_description: issueData.description,
-    image_url: issueData.attachments?.[0] || null,
-    tags: issueData.tags || [],
-    urgency: issueData.priority || 'moderate',
+    ticket_name: ticketData.title,
+    ticket_category: ticketData.category,
+    ticket_description: ticketData.description,
+    image_url: ticketData.attachments?.[0] || null,
+    tags: ticketData.tags || [],
+    urgency: ticketData.priority || "moderate",
     location: {
-      latitude: issueData.location?.latitude || 0,
-      longitude: issueData.location?.longitude || 0
-    }
+      latitude: ticketData.location?.latitude || 0,
+      longitude: ticketData.location?.longitude || 0,
+    },
   }),
 
   // Transform API user to mobile format
@@ -468,9 +508,9 @@ export const transformers = {
     location: user.location,
     role: user.role,
     isTechnician: user.isTechnician,
-    issues: user.issues || [],
-    points: user.points || 0
-  })
+    tickets: user.tickets || [],
+    points: user.points || 0,
+  }),
 };
 
 export default {
@@ -484,5 +524,5 @@ export default {
   transformers,
   // Helper functions
   setCurrentUser,
-  getCurrentUser
+  getCurrentUser,
 };

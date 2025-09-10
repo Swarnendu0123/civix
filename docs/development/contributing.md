@@ -1,6 +1,6 @@
 # Contributing to Civix
 
-Thank you for your interest in contributing to Civix! This guide will help you get started with contributing to the civic issue reporting platform.
+Thank you for your interest in contributing to Civix! This guide will help you get started with contributing to the civic ticket reporting platform.
 
 ## Getting Started
 
@@ -10,10 +10,10 @@ Before contributing, make sure you have your development environment set up by f
 ### Ways to Contribute
 
 #### 🐛 Bug Reports
-- Use GitHub Issues to report bugs
+- Use GitHub tickets to report bugs
 - Include detailed reproduction steps
 - Provide system information and screenshots
-- Search existing issues before creating new ones
+- Search existing tickets before creating new ones
 
 #### ✨ Feature Requests
 - Discuss new features in GitHub Discussions first
@@ -67,7 +67,7 @@ git checkout -b fix/bug-description
 git add .
 
 # Commit with descriptive message
-git commit -m "feat: add issue priority sorting functionality"
+git commit -m "feat: add ticket priority sorting functionality"
 ```
 
 ### 5. Push and Create PR
@@ -121,7 +121,7 @@ git push origin feature/your-feature-name
 cd clients/web && npm run lint
 cd clients/app && npm run lint
 
-# Fix auto-fixable issues
+# Fix auto-fixable tickets
 npm run lint -- --fix
 
 # Build to check for TypeScript errors
@@ -173,7 +173,7 @@ Brief description of changes
 - Collaborate effectively with team members
 
 ### Communication
-- Use GitHub Issues for bug reports
+- Use GitHub tickets for bug reports
 - Use GitHub Discussions for feature discussions
 - Be clear and detailed in communication
 - Respond promptly to feedback and questions

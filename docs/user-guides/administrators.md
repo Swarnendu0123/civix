@@ -1,6 +1,6 @@
 # User Guide for Administrators
 
-Welcome to the Civix administrative interface! This comprehensive guide will help you effectively manage civic issues, oversee technicians, and maintain high service quality in your jurisdiction.
+Welcome to the Civix administrative interface! This comprehensive guide will help you effectively manage civic tickets, oversee technicians, and maintain high service quality in your jurisdiction.
 
 ## Getting Started
 
@@ -15,27 +15,27 @@ Welcome to the Civix administrative interface! This comprehensive guide will hel
 
 #### Dashboard Overview
 The main dashboard provides:
-- **Real-time metrics** of all issues in your jurisdiction
-- **Geographic overview** with interactive issue mapping
+- **Real-time metrics** of all tickets in your jurisdiction
+- **Geographic overview** with interactive ticket mapping
 - **Performance analytics** and trend analysis
-- **Quick access** to critical issues requiring immediate attention
+- **Quick access** to critical tickets requiring immediate attention
 - **Team management** tools for technicians and staff
 
-## Issue Management
+## ticket Management
 
-### Issue Dashboard
+### ticket Dashboard
 
 #### Main View Components
-- **Issue Map**: Geographic visualization of all reported issues
-- **Issue List**: Tabular view with filtering and sorting options
-- **Status Overview**: Quick metrics on open, in-progress, and resolved issues
-- **Priority Queue**: Critical and high-priority issues requiring immediate attention
+- **ticket Map**: Geographic visualization of all reported tickets
+- **ticket List**: Tabular view with filtering and sorting options
+- **Status Overview**: Quick metrics on open, in-progress, and resolved tickets
+- **Priority Queue**: Critical and high-priority tickets requiring immediate attention
 - **Recent Activity**: Latest updates and technician actions
 
 #### Filtering and Search
 ```
 Filter Options:
-🔍 Search: Issue title, description, location, ID
+🔍 Search: ticket title, description, location, ID
 📅 Date Range: Custom date range selection
 📍 Location: Specific neighborhoods or areas
 🏷️ Category: Water, Electric, Roads, Sanitation, etc.
@@ -44,11 +44,11 @@ Filter Options:
 📊 Status: Open, In Progress, Resolved, Closed
 ```
 
-### Issue Review Process
+### ticket Review Process
 
-#### New Issue Triage
-1. **Review** newly reported issues in the "Pending Review" queue
-2. **Validate** issue details and categorization
+#### New ticket Triage
+1. **Review** newly reported tickets in the "Pending Review" queue
+2. **Validate** ticket details and categorization
 3. **Assess** priority level based on:
    - Public safety impact
    - Number of citizens affected
@@ -57,10 +57,10 @@ Filter Options:
 4. **Assign** to appropriate department or technician
 5. **Set** expected resolution timeline
 
-#### Issue Assignment
+#### ticket Assignment
 
 ##### Automatic Assignment
-The system can automatically assign issues based on:
+The system can automatically assign tickets based on:
 - **Technician specialization** (electrician, plumber, road maintenance)
 - **Geographic coverage** area
 - **Current workload** balancing
@@ -68,47 +68,47 @@ The system can automatically assign issues based on:
 - **Availability status** (active, on-site, offline)
 
 ##### Manual Assignment
-1. **Click** "Assign" on any unassigned issue
+1. **Click** "Assign" on any unassigned ticket
 2. **Select** technician from filtered list showing:
    - Specialization match
    - Current workload
-   - Distance from issue location
+   - Distance from ticket location
    - Performance rating
    - Availability status
 3. **Add** assignment notes or special instructions
 4. **Set** priority level and expected completion time
 5. **Notify** technician via app notification and/or SMS
 
-### Issue Tracking
+### ticket Tracking
 
 #### Status Management
-Monitor issue progression through these statuses:
+Monitor ticket progression through these statuses:
 
 - **🟢 Open**: Newly reported, awaiting assignment
 - **🟡 Assigned**: Technician assigned but work not started
 - **🔵 In Progress**: Active work being performed
 - **🟠 Pending Parts/Approval**: Waiting for resources or authorization
 - **✅ Resolved**: Work completed, awaiting verification
-- **🔒 Closed**: Issue verified and officially closed
+- **🔒 Closed**: ticket verified and officially closed
 
 #### Progress Monitoring
 - **View** real-time updates from technicians in the field
 - **Monitor** photo evidence of work progress
-- **Track** time spent on each issue
+- **Track** time spent on each ticket
 - **Receive** notifications for status changes
-- **Identify** issues exceeding expected resolution times
+- **Identify** tickets exceeding expected resolution times
 
 ### Communication Management
 
 #### Citizen Communication
-- **Send** status updates to issue reporters
+- **Send** status updates to ticket reporters
 - **Request** additional information when needed
 - **Notify** about expected delays or complications
-- **Collect** feedback upon issue resolution
+- **Collect** feedback upon ticket resolution
 - **Handle** escalations and complaints
 
 #### Technician Communication
-- **Provide** issue details and context
+- **Provide** ticket details and context
 - **Share** special instructions or safety considerations
 - **Coordinate** with other departments or utilities
 - **Approve** resource requests and overtime
@@ -130,10 +130,10 @@ Monitor issue progression through these statuses:
 Key Performance Indicators (KPIs):
 ⏱️ Average Resolution Time
 ⭐ Citizen Satisfaction Rating (1-5 stars)
-📈 Issues Resolved per Week/Month
+📈 tickets Resolved per Week/Month
 🎯 First-Time Fix Rate
 📍 Geographic Coverage Efficiency
-🔄 Issue Escalation Rate
+🔄 ticket Escalation Rate
 💬 Response Time to New Assignments
 ```
 
@@ -144,16 +144,16 @@ The system automatically:
 - **Distributes** new assignments based on current workload
 - **Considers** technician specialization and skill level
 - **Factors** geographic proximity to minimize travel time
-- **Accounts** for issue complexity and estimated duration
+- **Accounts** for ticket complexity and estimated duration
 - **Maintains** equitable workload distribution
 
 #### Manual Workload Adjustment
 1. **Access** the "Workload Manager" from the team dashboard
 2. **View** current assignments for each technician
-3. **Drag and drop** issues to reassign between technicians
+3. **Drag and drop** tickets to reassign between technicians
 4. **Consider** factors:
    - Technician availability and schedule
-   - Skill match for specific issue types
+   - Skill match for specific ticket types
    - Geographic efficiency
    - Current stress levels and workload
 5. **Notify** affected technicians of changes
@@ -182,16 +182,16 @@ Track each technician's:
 ### Dashboard Analytics
 
 #### Real-Time Metrics
-- **Active Issues**: Current open and in-progress issues
+- **Active tickets**: Current open and in-progress tickets
 - **Response Time**: Average time from report to assignment
-- **Resolution Rate**: Percentage of issues resolved within SLA
+- **Resolution Rate**: Percentage of tickets resolved within SLA
 - **Citizen Satisfaction**: Average rating and feedback scores
 - **Technician Utilization**: Team capacity and availability
-- **Geographic Hot Spots**: Areas with highest issue density
+- **Geographic Hot Spots**: Areas with highest ticket density
 
 #### Trend Analysis
-- **Weekly/Monthly** issue volume trends
-- **Seasonal patterns** in different issue categories
+- **Weekly/Monthly** ticket volume trends
+- **Seasonal patterns** in different ticket categories
 - **Performance improvements** or declining metrics
 - **Resource allocation** effectiveness
 - **Budget impact** of maintenance activities
@@ -200,7 +200,7 @@ Track each technician's:
 
 #### Standard Reports
 1. **Weekly Performance Summary**
-   - Issue volume and resolution statistics
+   - ticket volume and resolution statistics
    - Technician performance highlights
    - Budget and resource utilization
    - Citizen satisfaction summary
@@ -227,7 +227,7 @@ Track each technician's:
 ### Data Export and Integration
 
 #### Export Capabilities
-- **Issue data** with all details and history
+- **ticket data** with all details and history
 - **Performance metrics** for external analysis
 - **Financial data** for budget planning
 - **Geographic data** for GIS integration
@@ -251,13 +251,13 @@ Connect Civix data with:
 3. **Validate** work quality against standards
 4. **Check** compliance with safety regulations
 5. **Approve** or request additional work
-6. **Close** issue and notify citizen
+6. **Close** ticket and notify citizen
 
 #### Quality Control Measures
 - **Random** on-site inspections
 - **Citizen feedback** integration
 - **Photo evidence** requirements
-- **Supervisor approval** for complex issues
+- **Supervisor approval** for complex tickets
 - **Follow-up** surveys after resolution
 
 ### Continuous Improvement
@@ -280,12 +280,12 @@ Connect Civix data with:
 
 ### Cost Tracking
 
-#### Issue Cost Analysis
-- **Labor costs** per issue type and technician
+#### ticket Cost Analysis
+- **Labor costs** per ticket type and technician
 - **Material and equipment** expenses
 - **Vehicle and travel** costs
 - **Overtime and emergency** response costs
-- **Total cost per resolved** issue
+- **Total cost per resolved** ticket
 
 #### Budget Planning
 - **Historical cost** analysis for budgeting
@@ -344,17 +344,17 @@ Connect Civix data with:
 
 ## Best Practices
 
-### Effective Issue Management
+### Effective ticket Management
 1. **Prioritize** by impact and safety rather than just complaint volume
 2. **Communicate** proactively with citizens about delays or complications
-3. **Use** data to identify systemic issues and infrastructure needs
+3. **Use** data to identify systemic tickets and infrastructure needs
 4. **Coordinate** with other departments and agencies effectively
 5. **Document** lessons learned and process improvements
 
 ### Team Leadership
 1. **Provide** clear expectations and consistent feedback
 2. **Recognize** and reward excellent performance
-3. **Address** performance issues promptly and fairly
+3. **Address** performance tickets promptly and fairly
 4. **Invest** in professional development and training
 5. **Foster** teamwork and knowledge sharing
 

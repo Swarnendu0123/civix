@@ -3,7 +3,7 @@ import { defineConfig } from 'vitepress'
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   title: "Civix",
-  description: "Civic Issue Reporting Platform - SIH 2025",
+  description: "Civic ticket Reporting Platform - SIH 2025",
   ignoreDeadLinks: [
     // Ignore localhost URLs (development only)
     /^http:\/\/localhost/,
@@ -54,7 +54,7 @@ export default defineConfig({
         items: [
           { text: 'Overview', link: '/api/overview' },
           { text: 'Authentication', link: '/api/authentication' },
-          { text: 'Issues & Tickets', link: '/api/tickets' },
+          { text: 'tickets & Tickets', link: '/api/tickets' },
           { text: 'Users & Roles', link: '/api/users' },
           { text: 'Analytics', link: '/api/analytics' }
         ]

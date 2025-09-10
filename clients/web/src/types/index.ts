@@ -8,7 +8,7 @@ export interface Location {
 export interface User {
   _id: string; // uuid
   password: string; // Hash<string>
-  issues: string[]; // Array<Ref(Ticket)>
+  tickets: string[]; // Array<Ref(Ticket)>
   name: string | null;
   points: number; // integer/float
 }
@@ -19,9 +19,9 @@ export interface Ticket {
   creator_id: string; // uuid
   creator_name: string;
   status: 'open' | 'resolved' | 'in process';
-  issue_name: string;
-  issue_category: string; // water, electric issue
-  issue_description: string;
+  ticket_name: string;
+  ticket_category: string; // water, electric ticket
+  ticket_description: string;
   image_url: string;
   tags: string[];
   votes: {
@@ -53,7 +53,7 @@ export interface Worker {
   password: string; // Hash<string>
   name: string; // uuid (note: this seems like it should be string, but keeping as per spec)
   dept: string; // plumber or electrician
-  issues_assigned: string[]; // Array<Ref(Ticket)>
+  tickets_assigned: string[]; // Array<Ref(Ticket)>
   pulls_created: string[]; // Array<Ref(Pull_Request)>
 }
 
@@ -63,7 +63,7 @@ export interface Authority {
   password: string; // Hash<string>
   name: string;
   location: Location;
-  issues: string[]; // Array<Ref(Ticket)>
+  tickets: string[]; // Array<Ref(Ticket)>
 }
 
 // SubAuthority interface
@@ -74,7 +74,7 @@ export interface SubAuthority {
 }
 
 // Legacy interfaces for backward compatibility (can be removed later)
-export interface Issue {
+export interface ticket {
   id: string;
   title: string;
   description: string;

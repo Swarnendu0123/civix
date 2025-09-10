@@ -38,7 +38,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [selectedTechnician, setSelectedTechnician] = useState<string>('');
   const [notes, setNotes] = useState('');
-  const [issueCategory, setIssueCategory] = useState(ticket.issue_category);
+  const [ticketCategory, setticketCategory] = useState(ticket.ticket_category);
   const [suggestedTechnician, setSuggestedTechnician] = useState<Technician | null>(null);
 
   const categories = ['sanitation', 'electricity', 'water', 'road', 'other'];
@@ -52,12 +52,12 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
         fetchSuggestedTechnician();
       }
     }
-  }, [isOpen, issueCategory, mode]);
+  }, [isOpen, ticketCategory, mode]);
 
   const fetchTechnicians = async () => {
     try {
       setLoading(true);
-      const response = await api.technicians.getFiltered(issueCategory);
+      const response = await api.technicians.getFiltered(ticketCategory);
       setTechnicians(response.technicians || []);
     } catch (error) {
       console.error('Failed to fetch technicians:', error);
@@ -92,7 +92,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
       await api.admin.manualAssign(ticket._id, {
         authorityId: selectedTechnician, // Use authorityId as required
         technicianId: selectedTechnician,
-        issueCategory: issueCategory !== ticket.issue_category ? issueCategory : undefined,
+        ticketCategory: ticketCategory !== ticket.ticket_category ? ticketCategory : undefined,
         notes
       });
 
@@ -156,7 +156,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   {getModalTitle()}
                 </h3>
                 <p className="text-sm text-gray-600">
-                  Issue: {ticket.issue_name}
+                  ticket: {ticket.ticket_name}
                 </p>
                 <p className="text-xs text-gray-500">
                   Location: {ticket.location?.latitude}, {ticket.location?.longitude}
@@ -176,11 +176,11 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
             {mode === 'manual' && (
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Issue Category
+                  ticket Category
                 </label>
                 <select
-                  value={issueCategory}
-                  onChange={(e) => setIssueCategory(e.target.value)}
+                  value={ticketCategory}
+                  onChange={(e) => setticketCategory(e.target.value)}
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {categories.map(category => (

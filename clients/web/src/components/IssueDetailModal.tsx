@@ -13,13 +13,13 @@ import {
 import type { Ticket } from '../types';
 import MapboxMap from './MapboxMap';
 
-interface IssueDetailModalProps {
+interface ticketDetailModalProps {
   ticket: Ticket;
   isOpen: boolean;
   onClose: () => void;
 }
 
-const IssueDetailModal: React.FC<IssueDetailModalProps> = ({ ticket, isOpen, onClose }) => {
+const ticketDetailModal: React.FC<ticketDetailModalProps> = ({ ticket, isOpen, onClose }) => {
   if (!isOpen || !ticket) return null;
 
   const getStatusColor = (status: string) => {
@@ -59,7 +59,7 @@ const IssueDetailModal: React.FC<IssueDetailModalProps> = ({ ticket, isOpen, onC
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <h3 className="text-2xl leading-6 font-bold text-gray-900 mb-2">
-                  {ticket.issue_name}
+                  {ticket.ticket_name}
                 </h3>
                 <div className="flex items-center space-x-4 mb-4">
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(ticket.status)}`}>
@@ -69,7 +69,7 @@ const IssueDetailModal: React.FC<IssueDetailModalProps> = ({ ticket, isOpen, onC
                     {ticket.urgency} urgency
                   </span>
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 capitalize">
-                    {ticket.issue_category}
+                    {ticket.ticket_category}
                   </span>
                 </div>
               </div>
@@ -87,13 +87,13 @@ const IssueDetailModal: React.FC<IssueDetailModalProps> = ({ ticket, isOpen, onC
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Left Column */}
               <div className="space-y-6">
-                {/* Issue Image */}
+                {/* ticket Image */}
                 <div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-3">Issue Image</h4>
+                  <h4 className="text-lg font-medium text-gray-900 mb-3">ticket Image</h4>
                   <div className="relative">
                     <img
                       src={ticket.image_url}
-                      alt={ticket.issue_name}
+                      alt={ticket.ticket_name}
                       className="w-full h-64 object-cover rounded-lg"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
@@ -109,7 +109,7 @@ const IssueDetailModal: React.FC<IssueDetailModalProps> = ({ ticket, isOpen, onC
                 {/* Description */}
                 <div>
                   <h4 className="text-lg font-medium text-gray-900 mb-3">Description</h4>
-                  <p className="text-gray-700 leading-relaxed">{ticket.issue_description}</p>
+                  <p className="text-gray-700 leading-relaxed">{ticket.ticket_description}</p>
                 </div>
 
                 {/* Tags */}
@@ -211,13 +211,13 @@ const IssueDetailModal: React.FC<IssueDetailModalProps> = ({ ticket, isOpen, onC
                       <div className="flex-shrink-0 w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
                       <div className="flex-1">
                         <div className="flex justify-between">
-                          <span className="text-sm font-medium text-gray-900">Issue Reported</span>
+                          <span className="text-sm font-medium text-gray-900">ticket Reported</span>
                           <span className="text-sm text-gray-500 flex items-center">
                             <FiClock className="h-4 w-4 mr-1" />
                             {new Date(ticket.opening_time).toLocaleString()}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-600">Issue was reported by {ticket.creator_name}</p>
+                        <p className="text-sm text-gray-600">ticket was reported by {ticket.creator_name}</p>
                       </div>
                     </div>
 
@@ -226,13 +226,13 @@ const IssueDetailModal: React.FC<IssueDetailModalProps> = ({ ticket, isOpen, onC
                         <div className="flex-shrink-0 w-2 h-2 rounded-full bg-green-500 mt-2"></div>
                         <div className="flex-1">
                           <div className="flex justify-between">
-                            <span className="text-sm font-medium text-gray-900">Issue Resolved</span>
+                            <span className="text-sm font-medium text-gray-900">ticket Resolved</span>
                             <span className="text-sm text-gray-500 flex items-center">
                               <FiClock className="h-4 w-4 mr-1" />
                               {new Date(ticket.closing_time).toLocaleString()}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-600">Issue was marked as resolved</p>
+                          <p className="text-sm text-gray-600">ticket was marked as resolved</p>
                         </div>
                       </div>
                     )}
@@ -279,4 +279,4 @@ const IssueDetailModal: React.FC<IssueDetailModalProps> = ({ ticket, isOpen, onC
   );
 };
 
-export default IssueDetailModal;
+export default ticketDetailModal;

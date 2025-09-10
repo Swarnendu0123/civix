@@ -180,7 +180,7 @@ export default function AuthScreen({ initialMode = 'signin', onClose }: AuthScre
             </Text>
             <Text style={styles.description}>
               {mode === 'signin' 
-                ? 'Sign in to continue reporting civic issues'
+                ? 'Sign in to continue reporting civic tickets'
                 : 'Join the community and help make your city better'
               }
             </Text>

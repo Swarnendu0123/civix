@@ -1,6 +1,6 @@
 # User Guide for Citizens
 
-Welcome to Civix! This guide will help you make the most of the platform to report and track civic issues in your community.
+Welcome to Civix! This guide will help you make the most of the platform to report and track civic tickets in your community.
 
 ## Getting Started
 
@@ -15,7 +15,7 @@ Welcome to Civix! This guide will help you make the most of the platform to repo
 
 #### Web Access (Alternative)
 - Visit [https://civix-platform.vercel.app](https://civix-platform.vercel.app) in your web browser
-- The mobile app provides the best experience for reporting issues
+- The mobile app provides the best experience for reporting tickets
 
 ### Account Registration
 
@@ -36,16 +36,16 @@ Welcome to Civix! This guide will help you make the most of the platform to repo
 3. **Tap** "Sign In"
 4. **Complete** your profile setup if prompted
 
-## Reporting Issues
+## Reporting tickets
 
 ### Quick Report Process
 
 #### 1. Access the Report Feature
-- **Tap** the "Raise Issue" tab in the bottom navigation
+- **Tap** the "Raise ticket" tab in the bottom navigation
 - **Or** use the "+" button on the home screen
 
 #### 2. Take a Photo
-- **Tap** the camera button to take a photo of the issue
+- **Tap** the camera button to take a photo of the ticket
 - **Or** select an existing photo from your gallery
 - **Tip**: Take clear photos that show the problem clearly
 
@@ -55,9 +55,9 @@ Welcome to Civix! This guide will help you make the most of the platform to repo
 - **Adjust** the pin on the map if needed
 - **Add** a specific address or landmark description
 
-#### 4. Describe the Issue
-- **Select** the issue category:
-  - 🚰 Water (leaks, flooding, quality issues)
+#### 4. Describe the ticket
+- **Select** the ticket category:
+  - 🚰 Water (leaks, flooding, quality tickets)
   - ⚡ Electric (streetlights, power outages)
   - 🛣️ Roads (potholes, damaged signs, traffic lights)
   - 🗑️ Sanitation (garbage collection, cleanliness)
@@ -71,23 +71,23 @@ Welcome to Civix! This guide will help you make the most of the platform to repo
 - **Set** urgency level:
   - 🔴 **Critical**: Immediate safety risk or emergency
   - 🟡 **Moderate**: Needs attention but not urgent
-  - 🟢 **Low**: Minor issue that can wait
+  - 🟢 **Low**: Minor ticket that can wait
 
 #### 5. Add Additional Details
-- **Tag** the issue with relevant keywords
+- **Tag** the ticket with relevant keywords
 - **Add** any additional notes or context
-- **Include** time of day if relevant (for noise, traffic issues)
+- **Include** time of day if relevant (for noise, traffic tickets)
 
 #### 6. Submit Report
 - **Review** all information for accuracy
 - **Tap** "Submit Report"
-- **Receive** confirmation with your issue ID
+- **Receive** confirmation with your ticket ID
 
 ### Photo Guidelines
 
 #### What Makes a Good Photo
 ✅ **Clear and well-lit**: Take photos during daylight when possible  
-✅ **Show the full problem**: Include context around the issue  
+✅ **Show the full problem**: Include context around the ticket  
 ✅ **Multiple angles**: Take 2-3 photos from different perspectives  
 ✅ **Include landmarks**: Help officials locate the exact spot  
 ✅ **Safety first**: Don't put yourself at risk to get a photo
@@ -112,32 +112,32 @@ Welcome to Civix! This guide will help you make the most of the platform to repo
 - **Add** landmarks in the description ("near the big oak tree")
 - **Include** cross streets ("corner of Main St and 1st Ave")
 
-## Tracking Your Issues
+## Tracking Your tickets
 
 ### View Your Reports
 
 #### My Tickets Tab
 - **Tap** "My Tickets" in the bottom navigation
-- **View** all your submitted issues in one place
+- **View** all your submitted tickets in one place
 - **Filter** by status: Open, In Progress, Resolved
-- **Search** by keywords or issue type
+- **Search** by keywords or ticket type
 
-#### Issue Status Meanings
-- 🟢 **Open**: Issue reported and awaiting assignment
+#### ticket Status Meanings
+- 🟢 **Open**: ticket reported and awaiting assignment
 - 🟡 **In Progress**: Technician assigned and working on it
-- ✅ **Resolved**: Issue has been fixed and verified
+- ✅ **Resolved**: ticket has been fixed and verified
 
 ### Real-Time Updates
 
 #### Notifications
 You'll receive push notifications when:
-- Your issue has been assigned to a technician
-- Work has started on your issue
-- Your issue has been resolved
+- Your ticket has been assigned to a technician
+- Work has started on your ticket
+- Your ticket has been resolved
 - Officials need more information from you
 
 #### Status Updates
-- **Tap** any issue in "My Tickets" to see detailed updates
+- **Tap** any ticket in "My Tickets" to see detailed updates
 - **View** technician notes and progress photos
 - **See** estimated completion time
 - **Contact** the assigned technician if needed
@@ -145,43 +145,43 @@ You'll receive push notifications when:
 ### Following Up
 
 #### When to Follow Up
-- **After 48 hours** with no status update for critical issues
-- **After 1 week** with no status update for moderate issues
-- **If issue status** seems incorrect or incomplete
+- **After 48 hours** with no status update for critical tickets
+- **After 1 week** with no status update for moderate tickets
+- **If ticket status** seems incorrect or incomplete
 
 #### How to Follow Up
-1. **Open** the specific issue in "My Tickets"
+1. **Open** the specific ticket in "My Tickets"
 2. **Tap** "Add Update" or "Contact Support"
 3. **Provide** additional information or photos if available
 4. **Be polite** and specific about your concerns
 
 ## Community Features
 
-### Voting on Issues
+### Voting on tickets
 
 #### Supporting Other Reports
-- **Browse** nearby issues on the map
-- **Tap** the "👍" button to upvote issues you've also noticed
+- **Browse** nearby tickets on the map
+- **Tap** the "👍" button to upvote tickets you've also noticed
 - **Add** comments with additional information
-- **Share** issues with neighbors who might be affected
+- **Share** tickets with neighbors who might be affected
 
 #### Why Vote?
-- **Prioritization**: Issues with more votes get attention faster
+- **Prioritization**: tickets with more votes get attention faster
 - **Verification**: Multiple reports confirm the problem exists
 - **Community engagement**: Show support for neighborhood improvements
 
 ### Map Exploration
 
-#### Viewing Community Issues
-- **Tap** the "Map" tab to see all reported issues in your area
+#### Viewing Community tickets
+- **Tap** the "Map" tab to see all reported tickets in your area
 - **Zoom** in/out to see different neighborhoods
 - **Filter** by category, status, or date range
-- **Tap** markers to see issue details
+- **Tap** markers to see ticket details
 
 #### Understanding the Map
-- 🔴 **Red markers**: Critical/urgent issues
-- 🟡 **Yellow markers**: Moderate priority issues
-- 🟢 **Green markers**: Low priority issues
+- 🔴 **Red markers**: Critical/urgent tickets
+- 🟡 **Yellow markers**: Moderate priority tickets
+- 🟢 **Green markers**: Low priority tickets
 - 📍 **Your location**: Blue dot shows where you are
 
 ## Points and Rewards
@@ -189,16 +189,16 @@ You'll receive push notifications when:
 ### Earning Points
 
 #### How to Earn
-- **+10 points**: Report a new issue
-- **+5 points**: Provide helpful updates on your issues
-- **+3 points**: Vote on community issues
+- **+10 points**: Report a new ticket
+- **+5 points**: Provide helpful updates on your tickets
+- **+3 points**: Vote on community tickets
 - **+15 points**: Report gets resolved quickly
-- **+20 points**: Report an issue that gets marked as high impact
+- **+20 points**: Report an ticket that gets marked as high impact
 
 #### Bonus Points
 - **New user bonus**: +50 points for your first report
 - **Frequent reporter**: +5 bonus points after 10 reports
-- **Community helper**: +10 bonus for voting on 20+ issues
+- **Community helper**: +10 bonus for voting on 20+ tickets
 
 ### Rewards Program
 
@@ -237,10 +237,10 @@ You'll receive push notifications when:
 ### Notification Preferences
 
 #### Types of Notifications
-- **Issue Updates**: Status changes on your reports
+- **ticket Updates**: Status changes on your reports
 - **Assignment Notifications**: When technician is assigned
-- **Resolution Alerts**: When your issue is marked complete
-- **Community Updates**: New issues in your neighborhood
+- **Resolution Alerts**: When your ticket is marked complete
+- **Community Updates**: New tickets in your neighborhood
 - **System Announcements**: Important platform updates
 
 #### Customizing Notifications
@@ -252,13 +252,13 @@ You'll receive push notifications when:
 ## Privacy and Safety
 
 ### Your Data
-- **Location data** is only used to pinpoint issue locations
+- **Location data** is only used to pinpoint ticket locations
 - **Personal information** is kept secure and never shared
-- **Photos** are stored securely and only used for issue resolution
+- **Photos** are stored securely and only used for ticket resolution
 - **You can delete** your account and data at any time
 
 ### Safety Guidelines
-- **Don't trespass** on private property to report issues
+- **Don't trespass** on private property to report tickets
 - **Avoid reporting** while driving or in dangerous situations
 - **Report emergencies** to 911, not through the app
 - **Use common sense** and prioritize your safety
@@ -278,7 +278,7 @@ You'll receive push notifications when:
 - **Phone Support**: Available during business hours
 
 ### Emergency Situations
-**⚠️ Important**: Civix is for non-emergency civic issues only
+**⚠️ Important**: Civix is for non-emergency civic tickets only
 
 **For emergencies, always call:**
 - **911** - Police, Fire, Medical emergencies
@@ -290,21 +290,21 @@ You'll receive push notifications when:
 ### Best Practices
 1. **Be specific**: "Pothole at 123 Main St" vs "Road problem"
 2. **Include measurements**: "6-foot wide pothole" gives better context
-3. **Report promptly**: Fresh issues are easier to address
-4. **One issue per report**: Don't combine multiple problems
+3. **Report promptly**: Fresh tickets are easier to address
+4. **One ticket per report**: Don't combine multiple problems
 5. **Follow up appropriately**: Give reasonable time for response
 
 ### Making Your Reports Stand Out
-- **Provide context**: Explain why this issue matters
+- **Provide context**: Explain why this ticket matters
 - **Suggest solutions**: If you have ideas, share them
 - **Include impact**: How does this affect the community?
 - **Be constructive**: Focus on solutions, not just complaints
 - **Stay engaged**: Respond to requests for additional information
 
 ### Working with Your Community
-- **Coordinate with neighbors**: Report different angles of the same issue
-- **Share on social media**: Increase awareness of important issues
-- **Attend city meetings**: Follow up on major issues in person
+- **Coordinate with neighbors**: Report different angles of the same ticket
+- **Share on social media**: Increase awareness of important tickets
+- **Attend city meetings**: Follow up on major tickets in person
 - **Volunteer**: Join community improvement initiatives
 
 Welcome to the Civix community! Together, we can make our cities better, one report at a time. 🏙️✨

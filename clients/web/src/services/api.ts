@@ -1,6 +1,6 @@
 // API service for Civix backend
 import { BACKEND_BASE_URL } from '../config';
-import type { Technician, Issue } from '../types';
+import type { Technician, ticket } from '../types';
 
 const API_BASE_URL = BACKEND_BASE_URL || 'http://localhost:3000';
 
@@ -152,9 +152,9 @@ export const ticketsAPI = {
   async createTicket(data: {
     creator_id: string;
     creator_name: string;
-    issue_name: string;
-    issue_category: string;
-    issue_description: string;
+    ticket_name: string;
+    ticket_category: string;
+    ticket_description: string;
     image_url?: string;
     tags?: string[];
     urgency?: 'critical' | 'moderate' | 'low';
@@ -184,9 +184,9 @@ export const ticketsAPI = {
 
   async updateTicket(id: string, data: {
     status?: 'open' | 'resolved' | 'in process';
-    issue_name?: string;
-    issue_category?: string;
-    issue_description?: string;
+    ticket_name?: string;
+    ticket_category?: string;
+    ticket_description?: string;
     image_url?: string;
     tags?: string[];
     votes?: { upvotes: number; downvotes: number };
@@ -303,12 +303,12 @@ export const techniciansAPI = {
     return { tasks };
   },
 
-  async getFiltered(issueType: string) {
+  async getFiltered(ticketType: string) {
     // Filter technicians by specialization/category
     const technicians = await this.getTechnicians();
     return { 
       technicians: technicians.technicians.filter((t: any) => 
-        t.specialization?.toLowerCase().includes(issueType.toLowerCase())
+        t.specialization?.toLowerCase().includes(ticketType.toLowerCase())
       )
     };
   }
@@ -418,11 +418,11 @@ export const adminAPI = {
   async getCategories() {
     return { 
       categories: [
-        { name: 'Water', description: 'Water related issues' },
-        { name: 'Electric', description: 'Electrical issues' },
+        { name: 'Water', description: 'Water related tickets' },
+        { name: 'Electric', description: 'Electrical tickets' },
         { name: 'Road', description: 'Road and infrastructure' },
         { name: 'Waste', description: 'Waste management' },
-        { name: 'Other', description: 'Other civic issues' }
+        { name: 'Other', description: 'Other civic tickets' }
       ]
     };
   },
@@ -484,7 +484,7 @@ export const adminAPI = {
   async manualAssign(ticketId: string, data: {
     authorityId: string;
     technicianId?: string;
-    issueCategory?: string;
+    ticketCategory?: string;
     notes?: string;
   }) {
     return ticketsAPI.assignTicket(ticketId, data.authorityId);
@@ -516,12 +516,12 @@ export const adminAPI = {
 
 // Utility functions to transform data between API and UI formats
 export const transformers = {
-  // Transform API ticket to UI Issue format for backward compatibility
-  ticketToIssue: (ticket: any): Issue => ({
+  // Transform API ticket to UI ticket format for backward compatibility
+  ticketToticket: (ticket: any): ticket => ({
     id: ticket._id,
-    title: ticket.issue_name,
-    description: ticket.issue_description,
-    category: ticket.issue_category,
+    title: ticket.ticket_name,
+    description: ticket.ticket_description,
+    category: ticket.ticket_category,
     location: {
       address: `${ticket.location.latitude}, ${ticket.location.longitude}`,
       coordinates: { lat: ticket.location.latitude, lng: ticket.location.longitude }
@@ -537,7 +537,7 @@ export const transformers = {
     updates: ticket.closing_time ? [{
       date: new Date(ticket.closing_time),
       status: 'resolved',
-      note: 'Issue resolved',
+      note: 'ticket resolved',
       officer: ticket.authority?.name || 'System'
     }] : []
   }),
@@ -552,7 +552,7 @@ export const transformers = {
     location: user.location,
     role: user.role,
     isTechnician: user.isTechnician,
-    issues: user.issues || [],
+    tickets: user.tickets || [],
     points: user.points || 0,
     createdAt: new Date(user.createdAt),
     updatedAt: new Date(user.updatedAt)
@@ -572,18 +572,18 @@ export const transformers = {
   }),
 
   // Transform UI data to API format for ticket creation
-  uiToTicketAPI: (issueData: any, user: any) => ({
+  uiToTicketAPI: (ticketData: any, user: any) => ({
     creator_id: user.id || user._id,
     creator_name: user.name,
-    issue_name: issueData.title,
-    issue_category: issueData.category,
-    issue_description: issueData.description,
-    image_url: issueData.attachments?.[0] || null,
-    tags: issueData.tags || [],
-    urgency: issueData.priority || 'moderate',
+    ticket_name: ticketData.title,
+    ticket_category: ticketData.category,
+    ticket_description: ticketData.description,
+    image_url: ticketData.attachments?.[0] || null,
+    tags: ticketData.tags || [],
+    urgency: ticketData.priority || 'moderate',
     location: {
-      latitude: issueData.location?.coordinates?.lat || 0,
-      longitude: issueData.location?.coordinates?.lng || 0
+      latitude: ticketData.location?.coordinates?.lat || 0,
+      longitude: ticketData.location?.coordinates?.lng || 0
     }
   })
 };

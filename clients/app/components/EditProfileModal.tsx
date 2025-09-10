@@ -7,72 +7,108 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  Modal
+  Modal,
+  ScrollView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
 import { Colors } from '@/constants/Colors';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useAuth } from '@/hooks/useAuth';
-import { firebaseAuth } from '@/services/firebase';
+import { userAPI } from '@/services/api';
+
+interface User {
+  email: string;
+  name: string;
+  phone?: string;
+  address?: string;
+  location?: string;
+  role: string;
+  isTechnician: boolean;
+  points?: number;
+  createdAt?: string;
+}
 
 interface EditProfileModalProps {
   visible: boolean;
   onClose: () => void;
-  currentName: string;
+  user: User;
 }
 
-export default function EditProfileModal({ visible, onClose, currentName }: EditProfileModalProps) {
+export default function EditProfileModal({ visible, onClose, user }: EditProfileModalProps) {
   const { colorScheme } = useTheme();
-  const { user, login } = useAuth();
-  const [name, setName] = useState(currentName);
+  const { login } = useAuth();
+  const [name, setName] = useState(user.name || '');
+  const [phone, setPhone] = useState(user.phone || '');
+  const [address, setAddress] = useState(user.address || '');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
+
+  const validateForm = () => {
+    const newErrors: {[key: string]: string} = {};
+
+    if (!name.trim()) {
+      newErrors.name = 'Name is required';
+    }
+
+    if (phone && !/^\+?[\d\s\-\(\)]+$/.test(phone)) {
+      newErrors.phone = 'Please enter a valid phone number';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSave = async () => {
-    if (!name.trim()) {
-      setError('Name cannot be empty');
+    if (!validateForm()) {
       return;
     }
 
-    if (name.trim() === currentName) {
+    // Check if any changes were made
+    const hasChanges = 
+      name.trim() !== (user.name || '') ||
+      phone.trim() !== (user.phone || '') ||
+      address.trim() !== (user.address || '');
+
+    if (!hasChanges) {
       onClose();
       return;
     }
 
     setLoading(true);
-    setError('');
 
     try {
-      // Update Firebase profile
-      const result = await firebaseAuth.updateUserProfile({
-        displayName: name.trim()
+      // Call the backend API to update user details
+      const response = await userAPI.updateDetails(user.email, {
+        name: name.trim(),
+        phone: phone.trim() || undefined,
+        address: address.trim() || undefined,
+        // Note: location field can be added here when GPS/location picker is implemented
       });
 
-      if (result.success) {
-        // Update local user context
-        const updatedUser = {
-          ...user,
-          name: name.trim()
-        };
-        login(updatedUser);
+      if (response.user) {
+        // Update local user context with the response from backend
+        login(response.user);
 
-        Alert.alert('Success', 'Your name has been updated successfully!', [
+        Alert.alert('Success', 'Your profile has been updated successfully!', [
           { text: 'OK', onPress: onClose }
         ]);
       } else {
-        setError(result.error || 'Failed to update profile');
+        Alert.alert('Error', 'Failed to update profile. Please try again.');
       }
     } catch (error: any) {
-      setError(error.message || 'An unexpected error occurred');
+      console.error('Error updating profile:', error);
+      Alert.alert('Error', error.message || 'Failed to update profile. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleCancel = () => {
-    setName(currentName);
-    setError('');
+    setName(user.name || '');
+    setPhone(user.phone || '');
+    setAddress(user.address || '');
+    setErrors({});
     onClose();
   };
 
@@ -104,31 +140,91 @@ export default function EditProfileModal({ visible, onClose, currentName }: Edit
           </TouchableOpacity>
         </View>
 
-        <View style={styles.content}>
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Email Field (Read-only) */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Full Name</Text>
+            <Text style={styles.label}>Email</Text>
+            <View style={styles.readOnlyInput}>
+              <Text style={styles.readOnlyText}>{user.email}</Text>
+              <Text style={styles.notEditableText}>Not editable</Text>
+            </View>
+          </View>
+
+          {/* Name Field */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Full Name *</Text>
             <TextInput
-              style={[styles.input, error && styles.inputError]}
+              style={[styles.input, errors.name && styles.inputError]}
               value={name}
               onChangeText={(text) => {
                 setName(text);
-                if (error) setError('');
+                if (errors.name) {
+                  setErrors(prev => ({ ...prev, name: '' }));
+                }
               }}
               placeholder="Enter your full name"
               placeholderTextColor={Colors[colorScheme].tabIconDefault}
               autoCapitalize="words"
-              autoFocus
             />
-            {error && <Text style={styles.errorText}>{error}</Text>}
+            {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
+          </View>
+
+          {/* Phone Field */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Phone Number</Text>
+            <TextInput
+              style={[styles.input, errors.phone && styles.inputError]}
+              value={phone}
+              onChangeText={(text) => {
+                setPhone(text);
+                if (errors.phone) {
+                  setErrors(prev => ({ ...prev, phone: '' }));
+                }
+              }}
+              placeholder="Enter your phone number"
+              placeholderTextColor={Colors[colorScheme].tabIconDefault}
+              keyboardType="phone-pad"
+            />
+            {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+          </View>
+
+          {/* Address Field */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Address</Text>
+            <TextInput
+              style={[styles.input, styles.textArea, errors.address && styles.inputError]}
+              value={address}
+              onChangeText={(text) => {
+                setAddress(text);
+                if (errors.address) {
+                  setErrors(prev => ({ ...prev, address: '' }));
+                }
+              }}
+              placeholder="Enter your address"
+              placeholderTextColor={Colors[colorScheme].tabIconDefault}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
+            {errors.address && <Text style={styles.errorText}>{errors.address}</Text>}
+          </View>
+
+          {/* Role Field (Read-only) */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Role</Text>
+            <View style={styles.readOnlyInput}>
+              <Text style={styles.readOnlyText}>{user.role}</Text>
+              <Text style={styles.notEditableText}>Not editable</Text>
+            </View>
           </View>
 
           <View style={styles.infoCard}>
             <IconSymbol name="info.circle" size={20} color={Colors[colorScheme].tint} />
             <Text style={styles.infoText}>
-              Your display name will be updated across the app and in your Firebase profile.
+              Your profile information will be updated. Email and role cannot be changed.
             </Text>
           </View>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </Modal>
   );
@@ -195,6 +291,10 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
     color: Colors[colorScheme].text,
     backgroundColor: Colors[colorScheme].background,
   },
+  textArea: {
+    height: 80,
+    paddingTop: 14,
+  },
   inputError: {
     borderColor: '#EF4444',
   },
@@ -203,6 +303,24 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
     color: '#EF4444',
     marginTop: 4,
   },
+  readOnlyInput: {
+    borderWidth: 1,
+    borderColor: Colors[colorScheme].tabIconDefault + '20',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: Colors[colorScheme].tabIconDefault + '10',
+  },
+  readOnlyText: {
+    fontSize: 16,
+    color: Colors[colorScheme].text,
+    marginBottom: 4,
+  },
+  notEditableText: {
+    fontSize: 12,
+    color: Colors[colorScheme].tabIconDefault,
+    fontStyle: 'italic',
+  },
   infoCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -210,6 +328,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     gap: 12,
+    marginTop: 8,
   },
   infoText: {
     flex: 1,

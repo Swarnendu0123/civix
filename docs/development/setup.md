@@ -126,7 +126,7 @@ cd clients/web && npm run lint
 # Mobile app
 cd clients/app && npm run lint
 
-# Fix auto-fixable issues
+# Fix auto-fixable tickets
 npm run lint -- --fix
 ```
 
@@ -186,13 +186,13 @@ curl -X POST http://localhost:3000/api/auth/login \
 #### Manual Testing Workflow
 1. **Web Dashboard**:
    - Register/login functionality
-   - Issue management interface
+   - ticket management interface
    - Map visualization
    - Analytics dashboard
 
 2. **Mobile App**:
    - Tab navigation
-   - Issue reporting flow
+   - ticket reporting flow
    - Camera integration
    - Profile management
 
@@ -317,8 +317,8 @@ db.tickets.explain("executionStats").find({status: "open"})
 #### Query Optimization
 ```javascript
 // Use proper indexes for queries
-db.tickets.find({status: "open", issue_category: "Electric"})
-  .hint({status: 1, issue_category: 1})
+db.tickets.find({status: "open", ticket_category: "Electric"})
+  .hint({status: 1, ticket_category: 1})
 ```
 
 ## VSCode Setup
@@ -375,7 +375,7 @@ Create `.vscode/launch.json`:
 
 ## Troubleshooting
 
-### Common Issues
+### Common tickets
 
 #### Port Conflicts
 ```bash
@@ -405,7 +405,7 @@ npx tsc --build --clean
 npx tsc --build
 ```
 
-#### Expo/React Native Issues
+#### Expo/React Native tickets
 ```bash
 # Clear Expo cache
 npx expo install --fix
@@ -415,7 +415,7 @@ npx expo start --clear
 npx expo start --reset-cache
 ```
 
-### Database Issues
+### Database tickets
 
 #### MongoDB Connection
 ```bash
@@ -440,7 +440,7 @@ cd server && npm run seed
 ## Contributing Guidelines
 
 ### Before Submitting PRs
-1. **Run all linters** and fix issues
+1. **Run all linters** and fix tickets
 2. **Test affected functionality** manually
 3. **Update documentation** if needed
 4. **Write descriptive** commit messages

@@ -1,6 +1,6 @@
 # Architecture Overview
 
-Civix follows a modern, scalable architecture designed to handle high volumes of civic issue reports while maintaining performance and reliability.
+Civix follows a modern, scalable architecture designed to handle high volumes of civic ticket reports while maintaining performance and reliability.
 
 ## System Architecture
 
@@ -43,12 +43,12 @@ Civix follows a modern, scalable architecture designed to handle high volumes of
 
 #### 1. Mobile App (`clients/app/`)
 - **Framework**: React Native 0.79 with Expo 53
-- **Purpose**: Citizen-facing application for issue reporting
+- **Purpose**: Citizen-facing application for ticket reporting
 - **Key Features**:
   - Camera integration for photo capture
   - GPS location services
   - User authentication with Firebase
-  - Real-time issue tracking
+  - Real-time ticket tracking
   - Push notifications
 
 #### 2. Web Dashboard (`clients/web/`)
@@ -56,7 +56,7 @@ Civix follows a modern, scalable architecture designed to handle high volumes of
 - **Purpose**: Administrative interface for city officials
 - **Key Features**:
   - Interactive maps with Mapbox GL
-  - Issue management and assignment
+  - ticket management and assignment
   - Analytics and reporting
   - User management
   - Real-time dashboard updates
@@ -80,21 +80,21 @@ Civix follows a modern, scalable architecture designed to handle high volumes of
 
 ## Data Flow Architecture
 
-### 1. Issue Reporting Flow
+### 1. ticket Reporting Flow
 ```
 Citizen Mobile App → Photo Capture → GPS Location → API Server → Database
                                                         ↓
-Authority Web Dashboard ← Real-time Update ← Issue Created
+Authority Web Dashboard ← Real-time Update ← ticket Created
 ```
 
-### 2. Issue Assignment Flow
+### 2. ticket Assignment Flow
 ```
 Admin Dashboard → Assignment Decision → API Server → Database Update
                                            ↓
 Technician Mobile App ← Push Notification ← Assignment Created
 ```
 
-### 3. Issue Resolution Flow
+### 3. ticket Resolution Flow
 ```
 Technician → Update Status → API Server → Database → Real-time Update
                                              ↓
@@ -133,14 +133,14 @@ Citizen Mobile App ← Status Notification ← Update Processed
 |---------|---------|-------------|
 | Firebase | Authentication & Storage | Web & Mobile |
 | Mapbox | Maps & Geolocation | Web Dashboard |
-| Google AI | Issue Classification | Server API |
+| Google AI | ticket Classification | Server API |
 
 ## Database Schema Design
 
 ### Core Entities
 
 1. **Users** - Citizens, technicians, and administrators
-2. **Tickets** - Reported civic issues
+2. **Tickets** - Reported civic tickets
 3. **Authorities** - City departments and agencies
 4. **ResolveRequests** - Technician resolution submissions
 
@@ -232,14 +232,14 @@ GitHub → CI/CD Pipeline → Vercel (Frontend) + Cloud Provider (Backend)
 ### Application Metrics
 - **Response Times**: API endpoint performance tracking
 - **Error Rates**: 4xx and 5xx error monitoring
-- **User Activity**: Registration, login, and issue reporting metrics
+- **User Activity**: Registration, login, and ticket reporting metrics
 - **Database Performance**: Query execution times and connection health
 
 ### Business Metrics
-- **Issue Volume**: Daily/weekly/monthly reported issues
+- **ticket Volume**: Daily/weekly/monthly reported tickets
 - **Resolution Times**: Average time from report to resolution
 - **User Engagement**: Active users and feature usage
-- **Geographic Distribution**: Issue hotspots and coverage areas
+- **Geographic Distribution**: ticket hotspots and coverage areas
 
 ## Future Architecture Enhancements
 
@@ -251,7 +251,7 @@ GitHub → CI/CD Pipeline → Vercel (Frontend) + Cloud Provider (Backend)
 5. **Real-time Features**: WebSocket implementation for live updates
 
 ### Integration Possibilities
-- **IoT Sensors**: Automatic issue detection from city sensors
+- **IoT Sensors**: Automatic ticket detection from city sensors
 - **GIS Systems**: Integration with existing city geographic systems
 - **SMS/WhatsApp**: Alternative reporting channels
 - **Payment Gateway**: For fee-based services

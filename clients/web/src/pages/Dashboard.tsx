@@ -63,7 +63,7 @@ const Dashboard: React.FC = () => {
   const categoryStats = categories.map(category => ({
     name: category,
     count: tickets.filter((ticket: any) => 
-      ticket.issue_category?.toLowerCase() === category.toLowerCase()
+      ticket.ticket_category?.toLowerCase() === category.toLowerCase()
     ).length
   }));
 
@@ -107,7 +107,7 @@ const Dashboard: React.FC = () => {
             Dashboard
           </h2>
           <p className="mt-1 text-sm text-gray-500">
-            Overview of municipal issues and system performance
+            Overview of municipal tickets and system performance
           </p>
         </div>
       </div>
@@ -115,16 +115,16 @@ const Dashboard: React.FC = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Total Issues"
+          title="Total tickets"
           value={analytics.totalTickets}
-          helpText="All reported issues"
+          helpText="All reported tickets"
           icon={<FiFileText className="h-6 w-6" />}
           trend={{ value: 12, label: "from last month", isPositive: true }}
         />
         <StatCard
-          title="Active Issues"
+          title="Active tickets"
           value={analytics.activeTickets}
-          helpText="Open and in-progress issues"
+          helpText="Open and in-progress tickets"
           icon={<FiAlertCircle className="h-6 w-6" />}
           trend={{ value: -5, label: "from last week", isPositive: false }}
         />
@@ -138,7 +138,7 @@ const Dashboard: React.FC = () => {
         <StatCard
           title="Resolved Today"
           value={analytics.resolvedToday}
-          helpText="Completed issues"
+          helpText="Completed tickets"
           icon={<FiCheckCircle className="h-6 w-6" />}
           trend={{ value: 15, label: "from yesterday", isPositive: true }}
         />
@@ -150,7 +150,7 @@ const Dashboard: React.FC = () => {
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-6">
             <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-              Issues by Category
+              tickets by Category
             </h3>
             <div className="space-y-4">
               {categoryStats.map((category, index) => {
@@ -161,7 +161,7 @@ const Dashboard: React.FC = () => {
                     <div className="flex-1">
                       <div className="flex items-center justify-between text-sm">
                         <span className="font-medium text-gray-900">{category.name}</span>
-                        <span className="text-gray-500">{category.count} issues</span>
+                        <span className="text-gray-500">{category.count} tickets</span>
                       </div>
                       <div className="mt-1 bg-gray-200 rounded-full h-2">
                         <div
@@ -177,11 +177,11 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Recent Issues */}
+        {/* Recent tickets */}
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-6">
             <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-              Recent Issues
+              Recent tickets
             </h3>
             <div className="space-y-4">
               {tickets.map((ticket: any) => (
@@ -199,7 +199,7 @@ const Dashboard: React.FC = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
-                      {ticket.issue_name}
+                      {ticket.ticket_name}
                     </p>
                     <div className="flex items-center mt-1 text-xs text-gray-500">
                       <FiMapPin className="mr-1 h-3 w-3" />
