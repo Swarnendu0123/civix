@@ -1,26 +1,25 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const User = require("../models/User");
-const bcrypt = require("bcryptjs");
-const Ticket = require("../models/Ticket");
+const User = require('../models/User');
+const bcrypt = require('bcryptjs');
 
 // POST /api/user/register - Register user after Firebase auth
-router.post("/register", async (req, res) => {
+router.post('/register', async (req, res) => {
   try {
     const { email, password, name, phone, address, location } = req.body;
 
     // Validate required fields
     if (!email || !password) {
-      return res.status(400).json({
-        error: "Email and password are required",
+      return res.status(400).json({ 
+        error: 'Email and password are required' 
       });
     }
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(409).json({
-        error: "User already exists with this email",
+      return res.status(409).json({ 
+        error: 'User already exists with this email' 
       });
     }
 
@@ -35,45 +34,42 @@ router.post("/register", async (req, res) => {
       name: name || null,
       phone: phone || null,
       address: address || null,
-      location: location || null,
+      location: location || null
     });
 
     await newUser.save();
 
-    // Populate tickets to return full ticket objects
-    const populatedUser = await User.findById(newUser._id).populate("tickets");
-
     // Return user without password
     const userResponse = {
-      _id: populatedUser._id,
-      email: populatedUser.email,
-      name: populatedUser.name,
-      phone: populatedUser.phone,
-      address: populatedUser.address,
-      location: populatedUser.location,
-      role: populatedUser.role,
-      isTechnician: populatedUser.isTechnician,
-      tickets: populatedUser.tickets,
-      points: populatedUser.points,
-      createdAt: populatedUser.createdAt,
-      updatedAt: populatedUser.updatedAt,
+      _id: newUser._id,
+      email: newUser.email,
+      name: newUser.name,
+      phone: newUser.phone,
+      address: newUser.address,
+      location: newUser.location,
+      role: newUser.role,
+      isTechnician: newUser.isTechnician,
+      issues: newUser.issues,
+      points: newUser.points,
+      createdAt: newUser.createdAt,
+      updatedAt: newUser.updatedAt
     };
 
     res.status(201).json({
-      message: "User registered successfully",
-      user: userResponse,
+      message: 'User registered successfully',
+      user: userResponse
     });
+
   } catch (error) {
-    console.error("Error registering user:", error);
-    res.status(500).json({
-      error: "Internal server error",
+    console.error('Error registering user:', error);
+    res.status(500).json({ 
+      error: 'Internal server error' 
     });
   }
 });
 
-
 // PUT /api/user/update/details/:email - Update user details
-router.put("/update/details/:email", async (req, res) => {
+router.put('/update/details/:email', async (req, res) => {
   try {
     const { email } = req.params;
     const { name, phone, address, location } = req.body;
@@ -81,8 +77,8 @@ router.put("/update/details/:email", async (req, res) => {
     // Find user by email
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({
-        error: "User not found",
+      return res.status(404).json({ 
+        error: 'User not found' 
       });
     }
 
@@ -93,10 +89,11 @@ router.put("/update/details/:email", async (req, res) => {
     if (address !== undefined) updateFields.address = address;
     if (location !== undefined) updateFields.location = location;
 
-    const updatedUser = await User.findOneAndUpdate({ email }, updateFields, {
-      new: true,
-      runValidators: true,
-    }).populate("tickets");
+    const updatedUser = await User.findOneAndUpdate(
+      { email },
+      updateFields,
+      { new: true, runValidators: true }
+    );
 
     // Return user without password
     const userResponse = {
@@ -108,43 +105,44 @@ router.put("/update/details/:email", async (req, res) => {
       location: updatedUser.location,
       role: updatedUser.role,
       isTechnician: updatedUser.isTechnician,
-      tickets: updatedUser.tickets,
+      issues: updatedUser.issues,
       points: updatedUser.points,
       createdAt: updatedUser.createdAt,
-      updatedAt: updatedUser.updatedAt,
+      updatedAt: updatedUser.updatedAt
     };
 
     res.json({
-      message: "User details updated successfully",
-      user: userResponse,
+      message: 'User details updated successfully',
+      user: userResponse
     });
+
   } catch (error) {
-    console.error("Error updating user details:", error);
-    res.status(500).json({
-      error: "Internal server error",
+    console.error('Error updating user details:', error);
+    res.status(500).json({ 
+      error: 'Internal server error' 
     });
   }
 });
 
 // PUT /api/user/update/role/:email - Update user role
-router.put("/update/role/:email", async (req, res) => {
+router.put('/update/role/:email', async (req, res) => {
   try {
     const { email } = req.params;
     const { role, isTechnician } = req.body;
 
     // Validate role if provided
-    const validRoles = ["user", "technician", "authority", "admin"];
+    const validRoles = ['user', 'technician', 'authority', 'admin'];
     if (role && !validRoles.includes(role)) {
-      return res.status(400).json({
-        error: "Invalid role. Must be one of: " + validRoles.join(", "),
+      return res.status(400).json({ 
+        error: 'Invalid role. Must be one of: ' + validRoles.join(', ') 
       });
     }
 
     // Find user by email
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({
-        error: "User not found",
+      return res.status(404).json({ 
+        error: 'User not found' 
       });
     }
 
@@ -153,10 +151,11 @@ router.put("/update/role/:email", async (req, res) => {
     if (role !== undefined) updateFields.role = role;
     if (isTechnician !== undefined) updateFields.isTechnician = isTechnician;
 
-    const updatedUser = await User.findOneAndUpdate({ email }, updateFields, {
-      new: true,
-      runValidators: true,
-    }).populate("tickets");
+    const updatedUser = await User.findOneAndUpdate(
+      { email },
+      updateFields,
+      { new: true, runValidators: true }
+    );
 
     // Return user without password
     const userResponse = {
@@ -168,62 +167,54 @@ router.put("/update/role/:email", async (req, res) => {
       location: updatedUser.location,
       role: updatedUser.role,
       isTechnician: updatedUser.isTechnician,
-      tickets: updatedUser.tickets,
+      issues: updatedUser.issues,
       points: updatedUser.points,
       createdAt: updatedUser.createdAt,
-      updatedAt: updatedUser.updatedAt,
+      updatedAt: updatedUser.updatedAt
     };
 
     res.json({
-      message: "User role updated successfully",
-      user: userResponse,
+      message: 'User role updated successfully',
+      user: userResponse
     });
+
   } catch (error) {
-    console.error("Error updating user role:", error);
-    res.status(500).json({
-      error: "Internal server error",
+    console.error('Error updating user role:', error);
+    res.status(500).json({ 
+      error: 'Internal server error' 
     });
   }
 });
 
-// GET /api/user/tickets/:email - Get tickets created by user
-router.get("/tickets/:email", async (req, res) => {
+//GET /api/user/all - Get all users
+router.get('/all', async (req, res) => {
   try {
-    const { email } = req.params;
-
-    console.log(email);
-
-    // Find the issues with creator_email matching the user's email
-
-    const tickets = await Ticket.find({ creator_email: email });
-    if (!tickets) {
-      return res.status(404).json({
-        error: "No tickets found for this user",
+      const users = await User.find()
+        .sort({ createdAt: -1 }); // Sort by newest first
+  
+      res.json({
+        message: 'Users retrieved successfully',
+        users: users
+      });
+  
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      res.status(500).json({ 
+        error: 'Internal server error' 
       });
     }
-
-    res.json({
-      message: "User tickets retrieved successfully",
-      tickets,
-    });
-  } catch (error) {
-    console.error("Error fetching user tickets:", error);
-    res.status(500).json({
-      error: "Internal server error",
-    });
-  }
-});
+})
 
 // GET /api/user/profile/:email - Get user profile by email
-router.get("/profile/:email", async (req, res) => {
+router.get('/profile/:email', async (req, res) => {
   try {
     const { email } = req.params;
 
     // Find user by email
-    const user = await User.findOne({ email }).populate("tickets");
+    const user = await User.findOne({ email }).populate('issues');
     if (!user) {
-      return res.status(404).json({
-        error: "User not found",
+      return res.status(404).json({ 
+        error: 'User not found' 
       });
     }
 
@@ -237,20 +228,21 @@ router.get("/profile/:email", async (req, res) => {
       location: user.location,
       role: user.role,
       isTechnician: user.isTechnician,
-      tickets: user.tickets,
+      issues: user.issues,
       points: user.points,
       createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
+      updatedAt: user.updatedAt
     };
 
     res.json({
-      message: "User profile retrieved successfully",
-      user: userResponse,
+      message: 'User profile retrieved successfully',
+      user: userResponse
     });
+
   } catch (error) {
-    console.error("Error fetching user profile:", error);
-    res.status(500).json({
-      error: "Internal server error",
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ 
+      error: 'Internal server error' 
     });
   }
 });
