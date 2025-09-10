@@ -31,7 +31,7 @@ export default function ProfileScreen() {
     createdAt: {
       $date: "2025-09-10T13:44:14.769Z",
     },
-    tickets: []
+    tickets: [],
   });
   const [editModalVisible, setEditModalVisible] = useState(false);
 
