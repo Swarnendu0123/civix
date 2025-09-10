@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useColorScheme } from "@/hooks/useColorScheme";
 import { useTheme } from "@/hooks/useTheme";
 import { Colors } from "@/constants/Colors";
 import { IconSymbol } from "@/components/ui/IconSymbol";
@@ -17,15 +16,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { router } from "expo-router";
 import api, { ticketsAPI } from "@/services/api";
 import TicketDetailModal from "@/components/TicketDetailModal";
+import { Ticket } from "@/Types/Index";
 
 export default function HomeScreen() {
   const { colorScheme } = useTheme();
   const { user } = useAuth();
-  const [analytics, setAnalytics] = useState({
-    activeTickets: 0,
-    resolvedToday: 0,
-    inProgress: 0,
-  });
   const [recentTickets, setRecentTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
@@ -37,33 +32,12 @@ export default function HomeScreen() {
       try {
         setLoading(true);
 
-        // Fetch analytics data
-        try {
-          const analyticsData = await api.analytics.getAnalytics();
-          setAnalytics({
-            activeTickets: analyticsData.activeTickets,
-            resolvedToday: analyticsData.resolvedToday,
-            inProgress: analyticsData.inProgress,
-          });
-        } catch (error) {
-          console.log("Analytics not available, using sample data");
-        }
-
         // Fetch recent tickets
         try {
           const ticketsResponse = await api.tickets.getTickets();
           const allTickets = ticketsResponse.tickets || [];
-          // Get the 5 most recent tickets
-          const recentTicketsRaw = allTickets.slice(0, 5);
-          const transformedTickets = recentTicketsRaw.map((ticket: any) => {
-            const mobileFormat = api.transformers.ticketToMobileFormat(ticket);
-            // Keep original data for modal access
-            return {
-              ...mobileFormat,
-              _originalTicket: ticket,
-            };
-          });
-          setRecentTickets(transformedTickets);
+
+          setRecentTickets(allTickets);
         } catch (error: any) {
           console.log("Tickets not available, using sample data", error);
           // Keep sample data as fallback
@@ -94,59 +68,21 @@ export default function HomeScreen() {
     router.push("/raise_ticket");
   };
 
-  const handleTicketPress = async (ticket: any) => {
+  const handleTicketPress = async (ticket: Ticket) => {
+    console.log(ticket);
+
     try {
       setFetchingTicketDetails(true);
       setModalVisible(true);
 
-      // If we have the original ticket data, use it directly
-      if (ticket._originalTicket) {
-        setSelectedTicket(ticket._originalTicket);
-        setFetchingTicketDetails(false);
-        return;
-      }
-
       // Try to fetch fresh ticket details from the server using the original ticket ID
-      const ticketId = ticket._id || ticket.id;
+      const ticketId = ticket._id;
       const freshTicketResponse = await ticketsAPI.getTicket(ticketId);
       console.log("Fresh ticket data:", freshTicketResponse.ticket);
       setSelectedTicket(freshTicketResponse.ticket);
     } catch (error: any) {
       console.error("Failed to fetch ticket details:", error);
 
-      // Fallback: Convert the mobile format ticket back to server format for the modal
-      const fallbackTicket = {
-        _id: ticket._id || ticket.id,
-        creator_name: ticket.creatorName || "Unknown",
-        creator_id: ticket.creatorId || "unknown",
-        status: ticket.actualStatus || ticket.status || "open",
-        ticket_name: ticket.title,
-        ticket_category: ticket.category,
-        ticket_description: ticket.description,
-        image_url: ticket.imageUrl || null,
-        tags: ticket.tags || [],
-        votes: {
-          upvotes: ticket.upvotes || 0,
-          downvotes: ticket.downvotes || 0,
-        },
-        urgency:
-          ticket.status === "red"
-            ? "critical"
-            : ticket.status === "orange"
-            ? "moderate"
-            : "low",
-        location: {
-          latitude: parseFloat(ticket.location?.split(",")[0]) || 0,
-          longitude: parseFloat(ticket.location?.split(",")[1]) || 0,
-        },
-        opening_time: ticket.timestamp,
-        createdAt: ticket.timestamp,
-        updatedAt: ticket.timestamp,
-        closing_time: null,
-        authority: null,
-      };
-
-      setSelectedTicket(fallbackTicket);
       Alert.alert(
         "Warning",
         "Could not load latest ticket details. Showing cached data."
@@ -218,6 +154,44 @@ export default function HomeScreen() {
     }
   };
 
+  const convertDateTime = (datetime: string) => {
+    // accepts: 2025-09-10T18:58:02.087Z
+    // Returns: "10 Sep, 18:58"
+
+    const date = new Date(datetime);
+
+    // Get day and format without leading zero
+    const day = date.getDate();
+
+    // Get month abbreviation
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+    const month = months[date.getMonth()];
+
+    // Get hours and minutes with leading zeros if needed
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+
+    return `${day} ${month}, ${hours}:${minutes}`;
+  };
+
+
+const stripToTwoDecimals = (num: number): number => {
+    return Math.floor(num * 100) / 100;
+};
+
   const styles = createStyles(colorScheme);
 
   if (loading) {
@@ -240,7 +214,7 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={styles.greeting}>{getGreeting()}!</Text>
-          <Text style={styles.userName}>{user.name}</Text>
+          <Text style={styles.userName}>{user?.name}</Text>
         </View>
         <TouchableOpacity style={styles.notificationButton}>
           <IconSymbol
@@ -269,38 +243,35 @@ export default function HomeScreen() {
         {/* Recent Tickets */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Recent Tickets Feed</Text>
-          {recentTickets.map((ticket: any) => (
+          {recentTickets.map((ticket: Ticket) => (
             <TouchableOpacity
-              key={ticket.id || ticket._id}
+              key={ticket._id}
               style={styles.ticketCard}
               onPress={() => handleTicketPress(ticket)}
             >
               <View style={styles.ticketHeader}>
-                <Text style={styles.ticketTitle}>
-                  {ticket.title || ticket.ticket_name}
-                </Text>
+                <Text style={styles.ticketTitle}>{ticket.ticket_name}</Text>
                 <View
                   style={[
                     styles.statusBadge,
                     {
-                      backgroundColor: getStatusColor(
-                        ticket.statusColor || ticket.status
-                      ),
+                      backgroundColor: getStatusColor(ticket.status),
                     },
                   ]}
                 >
                   <Text style={styles.statusText}>{ticket.status}</Text>
                 </View>
               </View>
-              <Text style={styles.ticketLocation}>{ticket.location}</Text>
+              <Text style={styles.ticketLocation}></Text>
               <View style={styles.ticketFooter}>
                 <Text style={styles.ticketMeta}>
-                  {ticket.timestamp} • {ticket.distance}
+                  {/* Show Indian style date tiem */}
+                  {convertDateTime(ticket.createdAt)} • {stripToTwoDecimals(ticket.location.latitude)}, {stripToTwoDecimals(ticket.location.latitude)}
                 </Text>
                 <View style={styles.upvoteContainer}>
                   <IconSymbol name="arrow.up" size={16} color="#6B7280" />
                   <Text style={styles.upvoteText}>
-                    {ticket.votes?.upvotes.length || 0}
+                    {ticket.votes?.upvotes.length || "0"}
                   </Text>
                 </View>
               </View>
