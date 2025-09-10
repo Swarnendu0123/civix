@@ -165,37 +165,56 @@ export default function HomeScreen() {
     ticketId: string,
     voteType: "upvote" | "downvote"
   ) => {
-    if (!user?.email) {
-      Alert.alert("Error", "You must be logged in to vote");
+    console.log(`Attempting to ${voteType} ticket with ID: ${ticketId}`);
+
+    const ticketIndex = recentTickets.findIndex(
+      (ticket) => ticket._id === ticketId
+    );
+    if (ticketIndex === -1) {
+      console.error("Ticket not found in recentTickets state.");
+      return;
+    }
+
+    const ticket = recentTickets[ticketIndex];
+    const hasUpvoted = ticket.votes.upvotes.includes(user.email);
+    const hasDownvoted = ticket.votes.downvotes.includes(user.email);
+
+    if (
+      (voteType === "upvote" && hasUpvoted) ||
+      (voteType === "downvote" && hasDownvoted)
+    ) {
+      Alert.alert("Error", `You have already ${voteType}d this ticket.`);
       return;
     }
 
     try {
-      // For now, just update the vote count locally as server might not be available
-      if (selectedTicket && typeof selectedTicket === "object") {
-        const currentVotes = (selectedTicket as any).votes || {
-          upvotes: 0,
-          downvotes: 0,
-        };
-        const updatedTicket = {
-          ...(selectedTicket as any),
-          votes: {
-            upvotes:
-              voteType === "upvote"
-                ? currentVotes.upvotes + 1
-                : currentVotes.upvotes,
-            downvotes:
-              voteType === "downvote"
-                ? currentVotes.downvotes + 1
-                : currentVotes.downvotes,
-          },
-        };
-        setSelectedTicket(updatedTicket);
-        Alert.alert("Success", `Ticket ${voteType}d successfully! (Demo mode)`);
+      console.log(
+        `Sending ${voteType} request to API for ticket ID: ${ticketId}`
+      );
+      const response = await ticketsAPI.voteTicket(ticketId, voteType);
+      console.log("API response:", response);
+
+      if (voteType === "upvote") {
+        ticket.votes.upvotes.push(user.email);
+        ticket.votes.downvotes = ticket.votes.downvotes.filter(
+          (email: string) => email !== user.email
+        );
+      } else {
+        ticket.votes.downvotes.push(user.email);
+        ticket.votes.upvotes = ticket.votes.upvotes.filter(
+          (email: string) => email !== user.email
+        );
       }
+
+      // Update the ticket in the recentTickets array
+      const updatedTickets = [...recentTickets];
+      updatedTickets[ticketIndex] = { ...ticket, votes: response.votes };
+      setRecentTickets(updatedTickets);
+
+      Alert.alert("Success", `You have successfully ${voteType}d the ticket.`);
     } catch (error) {
       console.error("Failed to vote:", error);
-      Alert.alert("Error", "Failed to submit vote. Please try again.");
+      Alert.alert("Error", "Failed to submit your vote. Please try again.");
     }
   };
 
@@ -294,7 +313,7 @@ export default function HomeScreen() {
         visible={modalVisible}
         ticket={selectedTicket}
         onClose={handleCloseModal}
-        currentUserId={user?.email}
+        currentUserEmail={user?.email}
         loading={fetchingTicketDetails}
         onVote={handleVote}
       />

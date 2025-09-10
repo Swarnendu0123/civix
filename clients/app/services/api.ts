@@ -301,9 +301,14 @@ export const ticketsAPI = {
     urgency?: "critical" | "moderate" | "low";
     location: { latitude: number; longitude: number };
   }) {
+    const ticketData = {
+      ...data,
+      votes: { upvotes: [], downvotes: [] }, // Initialize votes
+    };
+
     return apiRequest("/api/ticket/create", {
       method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify(ticketData),
     });
   },
 
@@ -345,23 +350,16 @@ export const ticketsAPI = {
   },
 
   async voteTicket(id: string, type: "upvote" | "downvote") {
-    // Get current ticket to update votes
-    const currentTicket = await this.getTicket(id);
-    const currentVotes = currentTicket.ticket.votes || {
-      upvotes: 0,
-      downvotes: 0,
-    };
-
-    const newVotes = {
-      upvotes:
-        type === "upvote" ? currentVotes.upvotes + 1 : currentVotes.upvotes,
-      downvotes:
-        type === "downvote"
-          ? currentVotes.downvotes + 1
-          : currentVotes.downvotes,
-    };
-
-    return this.updateTicket(id, { votes: newVotes });
+    // Use new backend endpoints for voting
+    const user = getCurrentUser();
+    if (!user || !user.email) {
+      throw new Error("User not logged in");
+    }
+    const endpoint = `/api/ticket/${id}/${type}`;
+    return apiRequest(endpoint, {
+      method: "POST",
+      body: JSON.stringify({ userEmail: user.email }),
+    });
   },
 
   async updateTicketStatus(

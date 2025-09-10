@@ -147,11 +147,84 @@ export default function MyTicketsScreen() {
     ticketId: string,
     voteType: "upvote" | "downvote"
   ) => {
-    // Implement voting logic here
-    Alert.alert(
-      "Info",
-      "Voting feature will be implemented with backend integration"
+    if (!user) {
+      Alert.alert("Error", "User not logged in.");
+      return;
+    }
+
+    const ticketIndex = userTickets.findIndex(
+      (ticket) => ticket._id === ticketId
     );
+    if (ticketIndex === -1) {
+      console.error("Ticket not found in userTickets state.");
+      return;
+    }
+
+    const ticket = userTickets[ticketIndex];
+    const hasUpvoted = ticket.votes.upvotes.includes(user.email);
+    const hasDownvoted = ticket.votes.downvotes.includes(user.email);
+
+    if (
+      (voteType === "upvote" && hasUpvoted) ||
+      (voteType === "downvote" && hasDownvoted)
+    ) {
+      Alert.alert("Error", `You have already ${voteType}d this ticket.`);
+      return;
+    }
+
+    try {
+      console.log(
+        `Optimistically updating UI for ${voteType} on ticket ID: ${ticketId}`
+      );
+
+      // Optimistically update the UI before the API call
+      if (voteType === "upvote") {
+        ticket.votes.upvotes.push(user.email);
+        ticket.votes.downvotes = ticket.votes.downvotes.filter(
+          (email: string) => email !== user.email
+        );
+      } else {
+        ticket.votes.downvotes.push(user.email);
+        ticket.votes.upvotes = ticket.votes.upvotes.filter(
+          (email: string) => email !== user.email
+        );
+      }
+
+      // Update the ticket in the userTickets array
+      const updatedTickets = [...userTickets];
+      updatedTickets[ticketIndex] = { ...ticket };
+      setUserTickets(updatedTickets);
+
+      console.log("Updated userTickets state:", updatedTickets);
+
+      // Make the API call
+      const response = await ticketsAPI.voteTicket(ticketId, voteType);
+      console.log("API response for vote:", response);
+
+      Alert.alert("Success", `You have successfully ${voteType}d the ticket.`);
+    } catch (error) {
+      console.error("Failed to vote:", error);
+      Alert.alert("Error", "Failed to submit your vote. Please try again.");
+
+      // Revert the optimistic update in case of an error
+      console.log("Reverting optimistic update due to error.");
+      if (voteType === "upvote") {
+        ticket.votes.upvotes = ticket.votes.upvotes.filter(
+          (email: string) => email !== user.email
+        );
+        ticket.votes.downvotes.push(user.email);
+      } else {
+        ticket.votes.downvotes = ticket.votes.downvotes.filter(
+          (email: string) => email !== user.email
+        );
+        ticket.votes.upvotes.push(user.email);
+      }
+
+      const revertedTickets = [...userTickets];
+      revertedTickets[ticketIndex] = { ...ticket };
+      setUserTickets(revertedTickets);
+      console.log("Reverted userTickets state:", revertedTickets);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -315,13 +388,13 @@ export default function MyTicketsScreen() {
                     <View style={styles.voteItem}>
                       <IconSymbol name="arrow.up" size={16} color="#6B7280" />
                       <Text style={styles.voteCount}>
-                        {ticket.votes?.upvotes || 0}
+                        {ticket.votes?.upvotes.length || 0}
                       </Text>
                     </View>
                     <View style={styles.voteItem}>
                       <IconSymbol name="arrow.down" size={16} color="#6B7280" />
                       <Text style={styles.voteCount}>
-                        {ticket.votes?.downvotes || 0}
+                        {ticket.votes?.downvotes.length || 0}
                       </Text>
                     </View>
                   </View>
@@ -348,7 +421,7 @@ export default function MyTicketsScreen() {
         visible={modalVisible}
         ticket={selectedTicket}
         onClose={handleCloseModal}
-        currentUserId={user?.email}
+        currentUserEmail={user?.email}
         loading={fetchingTicketDetails}
         onVote={handleVote}
       />
