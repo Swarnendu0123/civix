@@ -31,7 +31,7 @@ const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
     const fetchTickets = async () => {
       try {
         setLoading(true);
-        const response = await api.tickets.getTickets({ limit: 100 }); // Get more tickets for filtering
+        const response = await api.tickets.getTickets(); // Get all tickets
         setTickets(response.tickets || []);
         setError(null);
       } catch (err) {
@@ -57,7 +57,7 @@ const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
             ticket.issue_name.toLowerCase().includes(query) ||
             ticket.issue_description.toLowerCase().includes(query) ||
             ticket.creator_name.toLowerCase().includes(query) ||
-            ticket.location.address.toLowerCase().includes(query)
+            `${ticket.location.latitude}, ${ticket.location.longitude}`.toLowerCase().includes(query)
           );
         }
         return true;

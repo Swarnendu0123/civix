@@ -32,8 +32,10 @@ const Dashboard: React.FC = () => {
         setAnalytics(analyticsData);
         
         // Fetch recent tickets for display
-        const ticketsResponse = await api.tickets.getTickets({ limit: 5 });
-        setTickets(ticketsResponse.tickets || []);
+        const ticketsResponse = await api.tickets.getTickets();
+        const allTickets = ticketsResponse.tickets || [];
+        // Get the 5 most recent tickets for dashboard
+        setTickets(allTickets.slice(0, 5));
         
         setError(null);
       } catch (err) {

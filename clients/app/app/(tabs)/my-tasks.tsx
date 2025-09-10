@@ -38,7 +38,8 @@ export default function MyTasksScreen() {
       setLoading(true);
       try {
         // Fetch tasks from backend API
-        const tasks = await api.technicians.getTechnicianTasks(user._id);
+        const response = await api.technicians.getTechnicianTasks(user._id);
+        const tasks = response.tasks || [];
         const mobileTasks = tasks.map((task: any) => api.transformers.taskToMobileFormat(task));
         setAssignedTasks(mobileTasks);
         
