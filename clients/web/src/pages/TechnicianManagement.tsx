@@ -25,7 +25,7 @@ const TechnicianManagement: React.FC = () => {
       try {
         setLoading(true);
         const apiTechnicians = await api.technicians.getTechnicians();
-        const uiTechnicians = apiTechnicians.map(api.transformers.apiTechnicianToUI);
+        const uiTechnicians = apiTechnicians.technicians.map(api.transformers.apiTechnicianToUI);
         setTechnicians(uiTechnicians);
         setError(null);
       } catch (err) {
@@ -90,7 +90,7 @@ const TechnicianManagement: React.FC = () => {
     const fetchTechnicians = async () => {
       try {
         const apiTechnicians = await api.technicians.getTechnicians();
-        const uiTechnicians = apiTechnicians.map(api.transformers.apiTechnicianToUI);
+        const uiTechnicians = apiTechnicians.technicians.map(api.transformers.apiTechnicianToUI);
         setTechnicians(uiTechnicians);
       } catch (err) {
         console.error('Error refreshing technicians:', err);

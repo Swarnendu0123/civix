@@ -162,17 +162,19 @@ const IssueDetailModal: React.FC<IssueDetailModalProps> = ({ ticket, isOpen, onC
                     Location
                   </h4>
                   <div className="bg-gray-100 rounded-lg p-4 mb-3">
-                    <p className="text-sm text-gray-700">{ticket.location.address}</p>
+                    <p className="text-sm text-gray-700">
+                      Lat: {ticket.location.latitude}, Lng: {ticket.location.longitude}
+                    </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      Coordinates: {ticket.location.coordinates.lat.toFixed(6)}, {ticket.location.coordinates.lng.toFixed(6)}
+                      Coordinates: {ticket.location.latitude.toFixed(6)}, {ticket.location.longitude.toFixed(6)}
                     </p>
                   </div>
                   
                   {/* Mapbox Map */}
                   <MapboxMap
-                    latitude={ticket.location.coordinates.lat}
-                    longitude={ticket.location.coordinates.lng}
-                    address={ticket.location.address}
+                    latitude={ticket.location.latitude}
+                    longitude={ticket.location.longitude}
+                    address={`${ticket.location.latitude}, ${ticket.location.longitude}`}
                     className="h-64 rounded-lg"
                     markerColor="#ef4444"
                   />

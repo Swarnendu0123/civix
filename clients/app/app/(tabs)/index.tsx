@@ -38,8 +38,11 @@ export default function HomeScreen() {
 
         // Fetch recent tickets
         try {
-          const ticketsResponse = await api.tickets.getTickets({ limit: 5 });
-          const transformedTickets = ticketsResponse.tickets.map(api.transformers.ticketToMobileFormat);
+          const ticketsResponse = await api.tickets.getTickets();
+          const allTickets = ticketsResponse.tickets || [];
+          // Get the 5 most recent tickets
+          const recentTicketsRaw = allTickets.slice(0, 5);
+          const transformedTickets = recentTicketsRaw.map(api.transformers.ticketToMobileFormat);
           setRecentTickets(transformedTickets);
         } catch (error) {
           console.log('Tickets not available, using sample data');

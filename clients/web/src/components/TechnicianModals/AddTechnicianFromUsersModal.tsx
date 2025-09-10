@@ -65,7 +65,6 @@ const AddTechnicianFromUsersModal: React.FC<AddTechnicianFromUsersModalProps> = 
       setLoading(true);
       const response = await api.admin.getUsers({
         role: 'citizen',
-        status: 'active',
         limit: 100
       });
       setUsers(response.users || []);

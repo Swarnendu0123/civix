@@ -95,36 +95,32 @@ export default function RaiseIssueScreen() {
     setIsSubmitting(true);
 
     try {
-      // Create FormData for the API request
-      const formData = new FormData();
-      formData.append('issue_name', issueTitle);
-      formData.append('issue_description', description);
-      formData.append('issue_category', selectedIssueType); // Use selected issue type
-      formData.append('urgency', 'moderate'); // Default urgency
-      formData.append('location_address', location === 'Auto-detecting location...' ? 'User Location' : location);
-      formData.append('location_lat', '19.0760'); // Default coordinates - would be GPS in real app
-      formData.append('location_lng', '72.8777');
-      formData.append('tags', selectedTags.join(','));
-      formData.append('reported_by', user?.email || 'anonymous');
-      formData.append('reporter_id', user?._id || 'anonymous');
+      // Prepare data in the format expected by the server API
+      const ticketData = {
+        creator_id: user?._id || user?.id || 'anonymous',
+        creator_name: user?.name || 'Anonymous User',
+        issue_name: issueTitle,
+        issue_description: description,
+        issue_category: selectedIssueType,
+        image_url: selectedImage === 'camera' || selectedImage === 'gallery' ? 'mock_image_url' : null,
+        tags: selectedTags,
+        urgency: 'moderate' as 'critical' | 'moderate' | 'low',
+        location: {
+          latitude: 19.0760, // Default coordinates - would be GPS in real app
+          longitude: 72.8777
+        }
+      };
 
-      // If image is selected, you would add it here
-      // formData.append('image', imageFile);
+      const response = await api.tickets.createTicket(ticketData);
 
-      const response = await api.tickets.createTicket(formData);
-
-      // Prepare success message based on assignment result
+      // Prepare success message
       let successMessage = 'Your civic issue has been reported successfully!';
       let additionalInfo = '';
 
-      if (response.autoAssignmentResult?.assigned) {
-        additionalInfo = `✅ Automatically assigned to a technician. You'll receive updates soon.`;
-      } else if (response.autoAssignmentResult?.requiresAdminApproval) {
-        additionalInfo = `🔄 Your issue is being reviewed for technician assignment.`;
-      } else if (response.classificationResult?.requiresManualReview) {
-        additionalInfo = `👥 Admin review required for proper classification and assignment.`;
+      if (response.ticket) {
+        additionalInfo = `✅ Your issue has been recorded with ID: ${response.ticket._id}`;
       } else {
-        additionalInfo = `📋 Your issue is in the queue for assignment.`;
+        additionalInfo = `📋 Your issue is now in the system for review.`;
       }
 
       Alert.alert(

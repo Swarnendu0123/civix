@@ -28,13 +28,15 @@ export default function MyTicketsScreen() {
       
       setLoading(true);
       try {
-        // Fetch tickets created by the current user
-        const response = await api.tickets.getTickets({ 
-          userId: user._id 
-        });
+        // Fetch all tickets and filter by current user
+        const response = await api.tickets.getTickets();
         
         if (response && response.tickets) {
-          const transformedTickets = response.tickets.map(api.transformers.ticketToMobileFormat);
+          // Filter tickets by current user
+          const userTickets = response.tickets.filter((ticket: any) => 
+            ticket.creator_id._id === user._id || ticket.creator_id === user._id
+          );
+          const transformedTickets = userTickets.map(api.transformers.ticketToMobileFormat);
           setUserTickets(transformedTickets);
         } else {
           // Use sample data as fallback

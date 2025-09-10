@@ -31,7 +31,7 @@ const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
     const fetchTickets = async () => {
       try {
         setLoading(true);
-        const response = await api.tickets.getTickets({ limit: 100 }); // Get more tickets for filtering
+        const response = await api.tickets.getTickets(); // Get all tickets
         setTickets(response.tickets || []);
         setError(null);
       } catch (err) {
@@ -57,7 +57,7 @@ const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
             ticket.issue_name.toLowerCase().includes(query) ||
             ticket.issue_description.toLowerCase().includes(query) ||
             ticket.creator_name.toLowerCase().includes(query) ||
-            ticket.location.address.toLowerCase().includes(query)
+            `${ticket.location.latitude}, ${ticket.location.longitude}`.toLowerCase().includes(query)
           );
         }
         return true;
@@ -310,7 +310,9 @@ const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center text-sm text-gray-500">
                       <FiMapPin className="mr-1 h-4 w-4" />
-                      <span className="max-w-xs truncate">{ticket.location.address}</span>
+                      <span className="max-w-xs truncate">
+                        {ticket.location.latitude}, {ticket.location.longitude}
+                      </span>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
