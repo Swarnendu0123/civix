@@ -350,45 +350,13 @@ export const adminAPI = {
     limit?: number; 
     search?: string 
   }) {
-    // Get all tickets and extract unique users
-    const tickets = await ticketsAPI.getTickets();
-    const allTickets = tickets.tickets || [];
-    
-    const users = allTickets
-      .map((t: any) => t.creator_id)
-      .filter((user: any, index: number, arr: any[]) => 
-        user && arr.findIndex(u => u._id === user._id) === index
-      );
-    
-    // Apply filters if provided
-    let filteredUsers = users;
-    if (options?.role) {
-      filteredUsers = users.filter((u: any) => u.role === options.role);
-    }
-    if (options?.search) {
-      const searchLower = options.search.toLowerCase();
-      filteredUsers = users.filter((u: any) => 
-        u.name?.toLowerCase().includes(searchLower) ||
-        u.email?.toLowerCase().includes(searchLower)
-      );
-    }
-    
-    // Mock pagination
-    const page = options?.page || 1;
-    const limit = options?.limit || 20;
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
-    
-    return { 
-      users: paginatedUsers,
-      pagination: {
-        page,
-        limit,
-        total: filteredUsers.length,
-        pages: Math.ceil(filteredUsers.length / limit)
-      }
-    };
+  const params = new URLSearchParams();
+  if (options?.page) params.append('page', String(options.page));
+  if (options?.limit) params.append('limit', String(options.limit));
+  if (options?.role && options.role !== 'all') params.append('role', options.role);
+  if (options?.search) params.append('search', options.search);
+  const query = params.toString() ? `?${params.toString()}` : '';
+  return apiRequest(`/api/user/all${query}`);
   },
 
   async updateUserStatus(email: string, status: string) {

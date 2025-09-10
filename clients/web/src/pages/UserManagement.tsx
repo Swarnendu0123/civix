@@ -6,8 +6,9 @@ interface User {
   _id: string;
   name: string;
   email: string;
-  role: 'citizen' | 'technician' | 'authority';
-  status: 'active' | 'inactive' | 'suspended';
+  role: string;        // raw role from backend (user, technician, authority, admin)
+  uiRole?: string;     // mapped display role (citizen)
+  status?: 'active' | 'inactive' | 'suspended'; // not persisted yet; local only
   createdAt: string;
   points?: number;
   contact?: string;
@@ -53,16 +54,9 @@ const UserManagement: React.FC = () => {
     fetchUsers();
   }, [currentPage, roleFilter, statusFilter, searchTerm]);
 
-  const handleStatusChange = async (userId: string, newStatus: string) => {
-    try {
-      await api.admin.updateUserStatus(userId, newStatus);
-      setUsers(prev => prev.map(user => 
-        user._id === userId ? { ...user, status: newStatus as any } : user
-      ));
-    } catch (err) {
-      console.error('Error updating user status:', err);
-      alert('Failed to update user status. Please try again.');
-    }
+  const handleStatusChange = (userId: string, newStatus: string) => {
+    // No backend persistence yet; update locally
+    setUsers(prev => prev.map(u => u._id === userId ? { ...u, status: newStatus as any } : u));
   };
 
   const handleDeleteUser = async (userId: string, userName: string) => {
@@ -93,15 +87,13 @@ const UserManagement: React.FC = () => {
   };
 
   const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'authority':
-        return 'bg-purple-100 text-purple-800';
-      case 'technician':
-        return 'bg-blue-100 text-blue-800';
-      case 'citizen':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+    const r = role === 'user' ? 'citizen' : role;
+    switch (r) {
+      case 'authority': return 'bg-purple-100 text-purple-800';
+      case 'technician': return 'bg-blue-100 text-blue-800';
+      case 'citizen': return 'bg-gray-100 text-gray-800';
+      case 'admin': return 'bg-indigo-100 text-indigo-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -345,14 +337,14 @@ const UserManagement: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleColor(user.role)}`}>
-                      {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                      {(user.uiRole || (user.role === 'user' ? 'citizen' : user.role)).replace(/^(.)/, c => c.toUpperCase())}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <select
-                      value={user.status}
+                      value={user.status || 'active'}
                       onChange={(e) => handleStatusChange(user._id, e.target.value)}
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border-0 ${getStatusColor(user.status)} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border-0 ${getStatusColor(user.status || 'active')} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
                     >
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
