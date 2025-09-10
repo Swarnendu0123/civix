@@ -9,14 +9,14 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { useTheme } from '@/hooks/useTheme';
 import { Colors } from '@/constants/Colors';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useAuth } from '@/hooks/useAuth';
 import api from '@/services/api';
 
 export default function MyTicketsScreen() {
-  const colorScheme = useColorScheme();
+  const { colorScheme } = useTheme();
   const { user } = useAuth();
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'open' | 'in_progress' | 'resolved'>('all');
   const [userTickets, setUserTickets] = useState<any[]>([]);

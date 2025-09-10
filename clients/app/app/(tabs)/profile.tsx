@@ -69,6 +69,8 @@ export default function ProfileScreen() {
     });
   };
 
+  const styles = createStyles(colorScheme);
+
   if (!user) {
     return (
       <SafeAreaView style={styles.container}>
@@ -81,8 +83,6 @@ export default function ProfileScreen() {
       </SafeAreaView>
     );
   }
-
-  const styles = createStyles(colorScheme);
 
   return (
     <SafeAreaView style={styles.container}>

@@ -1,22 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { useTheme } from '@/hooks/useTheme';
 import { Colors } from '@/constants/Colors';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useAuth } from '@/hooks/useAuth';
 import { router } from 'expo-router';
 import api from '@/services/api';
 
+interface Ticket {
+  id: string;
+  title: string;
+  location: string;
+  timestamp: string;
+  upvotes: number;
+  distance: string;
+  status: string;
+  statusColor: string;
+}
+
 export default function HomeScreen() {
-  const colorScheme = useColorScheme();
+  const { colorScheme } = useTheme();
   const { user } = useAuth();
   const [analytics, setAnalytics] = useState({
     activeTickets: 0,
     resolvedToday: 0,
     inProgress: 0
   });
-  const [recentTickets, setRecentTickets] = useState([]);
+  const [recentTickets, setRecentTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

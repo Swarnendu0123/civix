@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { useTheme } from '@/hooks/useTheme';
 import { Colors } from '@/constants/Colors';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 
 export default function MapScreen() {
-  const colorScheme = useColorScheme();
+  const { colorScheme } = useTheme();
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'urgent' | 'moderate' | 'resolved'>('all');
 
   // Sample markers data - in real app would come from API
