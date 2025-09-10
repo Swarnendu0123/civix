@@ -30,6 +30,7 @@ router.post('/create', async (req, res) => {
     const {
       creator_id,
       creator_name,
+      creator_email,
       issue_name,
       issue_category,
       issue_description,
@@ -53,12 +54,43 @@ router.post('/create', async (req, res) => {
       });
     }
 
-    // Validate creator exists
-    const creator = await User.findById(creator_id);
+    // Handle creator - first try to find by MongoDB ObjectId, then by Firebase UID via email or create new user
+    let creator = null;
+    
+    // Check if creator_id is a valid MongoDB ObjectId
+    const mongoose = require('mongoose');
+    if (mongoose.Types.ObjectId.isValid(creator_id)) {
+      creator = await User.findById(creator_id);
+    }
+    
+    // If not found and we have email, try to find by email or create user
     if (!creator) {
-      return res.status(404).json({ 
-        error: 'Creator user not found' 
-      });
+      if (creator_email) {
+        creator = await User.findOne({ email: creator_email });
+        
+        if (!creator) {
+          // Create new user with Firebase UID as password (for consistency)
+          creator = new User({
+            email: creator_email,
+            password: creator_id, // Use Firebase UID as password
+            name: creator_name,
+            role: 'user'
+          });
+          await creator.save();
+          console.log('Created new user for ticket creation:', creator);
+        }
+      } else {
+        // If no email provided, create a temporary user entry
+        const tempEmail = `user_${creator_id}@civix.temp`;
+        creator = new User({
+          email: tempEmail,
+          password: creator_id,
+          name: creator_name,
+          role: 'user'
+        });
+        await creator.save();
+        console.log('Created temporary user for ticket creation:', creator);
+      }
     }
 
     // Validate urgency if provided
@@ -69,9 +101,9 @@ router.post('/create', async (req, res) => {
       });
     }
 
-    // Create new ticket
+    // Create new ticket using the MongoDB _id of the creator
     const newTicket = new Ticket({
-      creator_id,
+      creator_id: creator._id, // Use the MongoDB ObjectId, not the Firebase UID
       creator_name,
       issue_name,
       issue_category,
@@ -87,9 +119,9 @@ router.post('/create', async (req, res) => {
 
     await newTicket.save();
 
-    // Add ticket reference to user's issues array
+    // Add ticket reference to user's issues array using MongoDB _id
     await User.findByIdAndUpdate(
-      creator_id,
+      creator._id, // Use the MongoDB ObjectId
       { $push: { issues: newTicket._id } }
     );
 

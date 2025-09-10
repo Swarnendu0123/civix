@@ -244,6 +244,7 @@ export const ticketsAPI = {
   async createTicket(data: {
     creator_id: string;
     creator_name: string;
+    creator_email?: string;
     issue_name: string;
     issue_category: string;
     issue_description: string;

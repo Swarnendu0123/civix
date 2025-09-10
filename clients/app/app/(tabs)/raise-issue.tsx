@@ -223,6 +223,7 @@ export default function RaiseIssueScreen() {
       const ticketData = {
         creator_id: currentUser._id || currentUser.id || currentUser.uid,
         creator_name: currentUser.name || 'Anonymous User',
+        creator_email: currentUser.email || undefined, // Add email for backend user lookup/creation
         issue_name: issueTitle,
         issue_description: description,
         issue_category: selectedIssueType,
