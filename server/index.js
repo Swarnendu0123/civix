@@ -26,6 +26,9 @@ let fallbackStorage = {
 const app = express();
 const PORT = process.env.PORT || 8000;
 
+// Check if running in serverless environment (Vercel)
+const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+
 // Connect to MongoDB
 let isConnectedToDB = false;
 connectDB().then((conn) => {
@@ -51,38 +54,56 @@ app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Serve static files
-app.use('/uploads', express.static('uploads'));
-
 // Configure multer for file uploads
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/');
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
+let upload;
 
-const upload = multer({ 
-    storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
-    fileFilter: (req, file, cb) => {
-        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-        if (allowedTypes.includes(file.mimetype)) {
-            cb(null, true);
-        } else {
-            cb(new Error('Invalid file type. Only JPEG, PNG, and GIF are allowed.'));
+if (isServerless) {
+    // For serverless environments, use memory storage
+    upload = multer({ 
+        storage: multer.memoryStorage(),
+        limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+        fileFilter: (req, file, cb) => {
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+            if (allowedTypes.includes(file.mimetype)) {
+                cb(null, true);
+            } else {
+                cb(new Error('Invalid file type. Only JPEG, PNG, and GIF are allowed.'));
+            }
         }
+    });
+} else {
+    // For local development, use disk storage
+    const uploadsDir = path.join(__dirname, 'uploads');
+    if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
     }
-});
+
+    // Serve static files (only in local environment)
+    app.use('/uploads', express.static('uploads'));
+
+    const storage = multer.diskStorage({
+        destination: (req, file, cb) => {
+            cb(null, 'uploads/');
+        },
+        filename: (req, file, cb) => {
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+        }
+    });
+
+    upload = multer({ 
+        storage: storage,
+        limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+        fileFilter: (req, file, cb) => {
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+            if (allowedTypes.includes(file.mimetype)) {
+                cb(null, true);
+            } else {
+                cb(new Error('Invalid file type. Only JPEG, PNG, and GIF are allowed.'));
+            }
+        }
+    });
+}
 
 // Authentication middleware
 const authenticateToken = async (req, res, next) => {
@@ -571,7 +592,9 @@ app.post('/api/tickets', upload.single('image'), authenticateToken, async (req, 
                 issue_name,
                 issue_category: processedIssueType, // Use processed issue type
                 issue_description,
-                image_url: req.file ? `/uploads/${req.file.filename}` : null,
+                image_url: req.file ? (isServerless ? 
+                    `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}` : 
+                    `/uploads/${req.file.filename}`) : null,
                 tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
                 votes: { upvotes: 0, downvotes: 0 },
                 urgency,
@@ -649,7 +672,9 @@ app.post('/api/tickets', upload.single('image'), authenticateToken, async (req, 
                 issue_name,
                 issue_category: processedIssueType, // Use processed issue type
                 issue_description,
-                image_url: req.file ? `/uploads/${req.file.filename}` : null,
+                image_url: req.file ? (isServerless ? 
+                    `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}` : 
+                    `/uploads/${req.file.filename}`) : null,
                 tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
                 votes: { upvotes: 0, downvotes: 0 },
                 urgency,
@@ -2152,12 +2177,25 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
         return res.status(400).json({ error: 'No file uploaded' });
     }
     
-    res.json({
-        filename: req.file.filename,
-        originalName: req.file.originalname,
-        size: req.file.size,
-        url: `/uploads/${req.file.filename}`
-    });
+    if (isServerless) {
+        // In serverless environment, return base64 data URL
+        res.json({
+            filename: req.file.originalname,
+            originalName: req.file.originalname,
+            size: req.file.size,
+            url: `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`,
+            type: 'base64'
+        });
+    } else {
+        // In local environment, return file path
+        res.json({
+            filename: req.file.filename,
+            originalName: req.file.originalname,
+            size: req.file.size,
+            url: `/uploads/${req.file.filename}`,
+            type: 'file'
+        });
+    }
 });
 
 // Error handling middleware
@@ -2177,10 +2215,14 @@ app.use('*', (req, res) => {
     res.status(404).json({ error: 'Route not found' });
 });
 
-// Start server
-app.listen(PORT, () => {
-    console.log(`Civix API Server running on port ${PORT}`);
-    console.log(`Health check: http://localhost:${PORT}/api/health`);
-});
+// Start server (only in non-serverless environments)
+if (!isServerless) {
+    app.listen(PORT, () => {
+        console.log(`Civix API Server running on port ${PORT}`);
+        console.log(`Health check: http://localhost:${PORT}/api/health`);
+    });
+} else {
+    console.log('Running in serverless mode');
+}
 
 module.exports = app;
