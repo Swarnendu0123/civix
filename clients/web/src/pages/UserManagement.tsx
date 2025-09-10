@@ -37,7 +37,6 @@ const UserManagement: React.FC = () => {
           page: currentPage,
           limit: 20,
           role: roleFilter !== 'all' ? roleFilter : undefined,
-          status: statusFilter !== 'all' ? statusFilter : undefined,
           search: searchTerm || undefined
         });
         setUsers(response.users || []);

@@ -310,7 +310,9 @@ const IssuesTable: React.FC<IssuesTableProps> = ({ onViewIssue }) => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center text-sm text-gray-500">
                       <FiMapPin className="mr-1 h-4 w-4" />
-                      <span className="max-w-xs truncate">{ticket.location.address}</span>
+                      <span className="max-w-xs truncate">
+                        {ticket.location.latitude}, {ticket.location.longitude}
+                      </span>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

@@ -221,7 +221,7 @@ export const ticketsAPI = {
     return this.updateTicket(id, { status });
   },
 
-  async getTechnicianSuggestions() {
+  async getTechnicianSuggestions(_ticketId?: string) {
     // This would need to be implemented on the server
     return { suggestions: [] };
   }
@@ -282,11 +282,11 @@ export const techniciansAPI = {
     return userAPI.register(data.email, 'temp_password', data.name, data.contact);
   },
 
-  async updateTechnician() {
+  async updateTechnician(_id: string, _data: any) {
     throw new Error('Update technician requires server-side implementation');
   },
 
-  async deleteTechnician() {
+  async deleteTechnician(_id: string) {
     throw new Error('Delete technician requires server-side implementation');
   },
 
@@ -344,7 +344,12 @@ const fileToBase64 = (file: File): Promise<string> => {
 // Admin APIs (enhanced to work with current server implementation)
 export const adminAPI = {
   // User Management
-  async getUsers() {
+  async getUsers(options?: { 
+    role?: string; 
+    page?: number; 
+    limit?: number; 
+    search?: string 
+  }) {
     // Get all tickets and extract unique users
     const tickets = await ticketsAPI.getTickets();
     const allTickets = tickets.tickets || [];
@@ -355,7 +360,35 @@ export const adminAPI = {
         user && arr.findIndex(u => u._id === user._id) === index
       );
     
-    return { users };
+    // Apply filters if provided
+    let filteredUsers = users;
+    if (options?.role) {
+      filteredUsers = users.filter((u: any) => u.role === options.role);
+    }
+    if (options?.search) {
+      const searchLower = options.search.toLowerCase();
+      filteredUsers = users.filter((u: any) => 
+        u.name?.toLowerCase().includes(searchLower) ||
+        u.email?.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    // Mock pagination
+    const page = options?.page || 1;
+    const limit = options?.limit || 20;
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+    
+    return { 
+      users: paginatedUsers,
+      pagination: {
+        page,
+        limit,
+        total: filteredUsers.length,
+        pages: Math.ceil(filteredUsers.length / limit)
+      }
+    };
   },
 
   async updateUserStatus(email: string, status: string) {
@@ -363,21 +396,21 @@ export const adminAPI = {
     return userAPI.updateRole(email, status);
   },
 
-  async deleteUser() {
+  async deleteUser(_userId: string) {
     throw new Error('Delete user requires server-side implementation');
   },
 
   // Promote user to technician
-  async promoteUserToTechnician(email: string) {
+  async promoteUserToTechnician(email: string, _data?: any) {
     return userAPI.updateRole(email, 'technician', true);
   },
 
   // Notifications Management (mock implementation)
-  async getNotifications() {
+  async getNotifications(_options?: { limit?: number }) {
     return { notifications: [] };
   },
 
-  async markNotificationRead() {
+  async markNotificationRead(_id: string) {
     return { success: true };
   },
 
@@ -450,6 +483,7 @@ export const adminAPI = {
   // Enhanced Assignment APIs
   async manualAssign(ticketId: string, data: {
     authorityId: string;
+    technicianId?: string;
     issueCategory?: string;
     notes?: string;
   }) {
@@ -458,6 +492,7 @@ export const adminAPI = {
 
   async approveAssignment(ticketId: string, data: {
     authorityId: string;
+    technicianId?: string;
     approved: boolean;
     notes?: string;
   }) {

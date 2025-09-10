@@ -1,7 +1,7 @@
-// Location interface
+// Location interface (matches server API format)
 export interface Location {
-  coordinates: { lat: number; lng: number; };
-  address: string;
+  latitude: number;
+  longitude: number;
 }
 
 // User model (Admin only - no normal users in admin panel)

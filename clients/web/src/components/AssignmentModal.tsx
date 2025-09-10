@@ -71,8 +71,9 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     try {
       const suggestions = await api.tickets.getTechnicianSuggestions(ticket._id);
       if (suggestions.suggestions && suggestions.suggestions.length > 0) {
-        setSuggestedTechnician(suggestions.suggestions[0]);
-        setSelectedTechnician(suggestions.suggestions[0]._id);
+        const suggestion = suggestions.suggestions[0] as any;
+        setSuggestedTechnician(suggestion);
+        setSelectedTechnician(suggestion?._id || suggestion?.id);
       }
     } catch (error) {
       console.error('Failed to fetch suggested technician:', error);
@@ -89,6 +90,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
       setLoading(true);
       
       await api.admin.manualAssign(ticket._id, {
+        authorityId: selectedTechnician, // Use authorityId as required
         technicianId: selectedTechnician,
         issueCategory: issueCategory !== ticket.issue_category ? issueCategory : undefined,
         notes
@@ -109,6 +111,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
       setLoading(true);
       
       await api.admin.approveAssignment(ticket._id, {
+        authorityId: selectedTechnician, // Use authorityId as required
         technicianId: selectedTechnician,
         approved,
         notes
@@ -156,7 +159,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   Issue: {ticket.issue_name}
                 </p>
                 <p className="text-xs text-gray-500">
-                  Location: {ticket.location?.address}
+                  Location: {ticket.location?.latitude}, {ticket.location?.longitude}
                 </p>
               </div>
               <button

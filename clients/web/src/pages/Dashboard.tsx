@@ -29,7 +29,16 @@ const Dashboard: React.FC = () => {
         
         // Fetch analytics data
         const analyticsData = await api.analytics.getAnalytics();
-        setAnalytics(analyticsData);
+        
+        // Transform analytics data to match expected format
+        setAnalytics({
+          activeTickets: analyticsData.openTickets,
+          resolvedToday: analyticsData.resolvedTickets,
+          inProgress: analyticsData.inProgressTickets,
+          totalTickets: analyticsData.totalTickets,
+          totalUsers: 0, // Mock value
+          totalTechnicians: 0 // Mock value
+        });
         
         // Fetch recent tickets for display
         const ticketsResponse = await api.tickets.getTickets();
