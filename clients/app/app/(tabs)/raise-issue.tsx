@@ -453,8 +453,6 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
   },
   imageTapText: {
     fontSize: 14,
-    color: Colors[colorScheme].tabIconDefault,
-    marginTop: 4,
     textAlign: 'center',
     position: 'absolute',
     bottom: 8,

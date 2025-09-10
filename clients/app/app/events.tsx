@@ -245,7 +245,7 @@ export default function EventsScreen() {
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Can't find what you're looking for? Contact the community organizers to suggest new events.
+            Can&apos;t find what you&apos;re looking for? Contact the community organizers to suggest new events.
           </Text>
         </View>
       </ScrollView>
