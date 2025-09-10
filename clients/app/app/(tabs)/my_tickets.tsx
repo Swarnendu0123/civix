@@ -10,11 +10,9 @@ import {
   RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useColorScheme } from "@/hooks/useColorScheme";
 import { useTheme } from "@/hooks/useTheme";
 import { Colors } from "@/constants/Colors";
 import { IconSymbol } from "@/components/ui/IconSymbol";
-import { Image } from "react-native";
 import { useAuth } from "@/hooks/useAuth";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import { ticketsAPI, userAPI } from "@/services/api";
@@ -324,7 +322,7 @@ export default function MyTicketsScreen() {
             />
             <Text style={styles.emptyTitle}>No Tickets Yet</Text>
             <Text style={styles.emptySubtitle}>
-              You haven't created any tickets yet. Start by reporting an issue
+              You havent created any tickets yet. Start by reporting an issue
               in your area.
             </Text>
           </View>
@@ -424,6 +422,7 @@ export default function MyTicketsScreen() {
       <TicketDetailModal
         visible={modalVisible}
         ticket={selectedTicket}
+        setSelectedTicket={setSelectedTicket}
         onClose={handleCloseModal}
         currentUserEmail={user?.email}
         loading={fetchingTicketDetails}

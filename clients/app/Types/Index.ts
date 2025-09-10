@@ -34,3 +34,17 @@ export interface Ticket {
   updatedAt: string;
 }
 
+
+
+export interface UserDeails {
+  email: string;
+  name: string;
+  phone?: string;
+  address?: string;
+  location?: string;
+  role: string;
+  isTechnician: boolean;
+  points?: number;
+  createdAt?: string;
+  updatedAt: string;
+}

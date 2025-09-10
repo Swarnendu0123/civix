@@ -71,14 +71,6 @@ export default function ProfileScreen() {
     ]);
   };
 
-  const formatJoinDate = (dateString: string) => {
-    if (!dateString) return "Recently";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
 
   const styles = createStyles(colorScheme);
 
@@ -119,7 +111,7 @@ export default function ProfileScreen() {
             <View style={styles.avatar}>
               <IconSymbol name="person.fill" size={48} color="white" />
             </View>
-            {user.isTechnician && (
+            {userdetails.isTechnician && (
               <View style={styles.technicianBadge}>
                 <IconSymbol name="wrench.fill" size={16} color="white" />
               </View>
@@ -128,11 +120,11 @@ export default function ProfileScreen() {
 
           <View style={styles.userInfo}>
             <Text style={styles.userName}>{user.name || "User"}</Text>
-            {user.isTechnician && (
+            {userdetails.isTechnician && (
               <Text style={styles.technicianLabel}>Technician</Text>
             )}
             <Text style={styles.userEmail}>{user.email}</Text>
-            {user.phone && (
+            {userdetails.phone && (
               <Text style={styles.userPhone}>{userdetails.phone}</Text>
             )}
             {userdetails.address && (
@@ -146,7 +138,7 @@ export default function ProfileScreen() {
               </Text>
             )}
             <Text style={styles.joinDate}>
-              Member since {formatJoinDate(user.createdAt)}
+              Member since Today
             </Text>
           </View>
         </View>
@@ -272,7 +264,7 @@ export default function ProfileScreen() {
       <EditProfileModal
         visible={editModalVisible}
         onClose={() => setEditModalVisible(false)}
-        user={user}
+        user={userdetails}
       />
     </SafeAreaView>
   );
