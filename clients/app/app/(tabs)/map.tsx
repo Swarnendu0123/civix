@@ -11,27 +11,6 @@ export default function MapScreen() {
 
   // Sample markers data - in real app would come from API
   const markers = [
-    {
-      id: 'M001',
-      title: 'Pothole near MMM',
-      status: 'urgent',
-      coordinates: { lat: 28.7041, lng: 77.1025 },
-      upvotes: 15
-    },
-    {
-      id: 'M002', 
-      title: 'Street light not working',
-      status: 'moderate',
-      coordinates: { lat: 28.7051, lng: 77.1035 },
-      upvotes: 8
-    },
-    {
-      id: 'M003',
-      title: 'Water leak fixed',
-      status: 'resolved',
-      coordinates: { lat: 28.7061, lng: 77.1045 },
-      upvotes: 23
-    }
   ];
 
   const filteredMarkers = markers.filter(marker => 

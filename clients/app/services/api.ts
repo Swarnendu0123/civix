@@ -1,6 +1,18 @@
 // API service for Civix mobile app
-// load from environment variable or default to localhost
-const API_BASE_URL = process.env.BACKEND_URL || 'http://localhost:3000';
+// Load from environment variable or default to localhost
+// In web mode, use the current origin to avoid CORS issues
+const getApiBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    // Running in web browser - use current origin with port 3000
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    return `${protocol}//${hostname}:3000`;
+  }
+  // Running in React Native - use localhost
+  return process.env.BACKEND_URL || 'http://localhost:3000';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Simple user storage for this implementation (no JWT tokens in server)
 let currentUser: any = null;
@@ -18,44 +30,105 @@ export const getCurrentUser = () => {
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
   
+  console.log(`Making API request to: ${url}`);
+  console.log('Request options:', options);
+  
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...options.headers,
   };
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'API request failed');
+    console.log(`Response status: ${response.status}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error Response:', errorText);
+      
+      let error;
+      try {
+        error = JSON.parse(errorText);
+      } catch {
+        error = { error: errorText || 'API request failed' };
+      }
+      throw new Error(error.error || 'API request failed');
+    }
+
+    const data = await response.json();
+    console.log('API Response:', data);
+    return data;
+  } catch (error) {
+    console.error('API Request Error:', error);
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Network error: Cannot connect to server. Please check if the server is running.');
+    }
+    throw error;
   }
-
-  return response.json();
 };
 
 // User Management API (matches server implementation)
 export const userAPI = {
   async register(email: string, password: string, name?: string, phone?: string, address?: string, location?: { latitude: number; longitude: number }) {
-    const response = await apiRequest('/api/user/register', {
-      method: 'POST',
-      body: JSON.stringify({ 
-        email, 
-        password, 
-        name: name || null, 
-        phone: phone || null, 
-        address: address || null, 
-        location: location || null 
-      }),
-    });
-    
-    if (response.user) {
-      setCurrentUser(response.user);
+    try {
+      const response = await apiRequest('/api/user/register', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          email, 
+          password, 
+          name: name || null, 
+          phone: phone || null, 
+          address: address || null, 
+          location: location || null 
+        }),
+      });
+      
+      if (response.user) {
+        setCurrentUser(response.user);
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('User registration failed:', error);
+      throw error;
     }
-    
-    return response;
+  },
+
+  async findOrCreateUser(firebaseUser: any) {
+    try {
+      // First try to find user by email
+      // Since we don't have a find endpoint, we'll try to register and handle existing user error
+      const userData = {
+        email: firebaseUser.email,
+        password: firebaseUser.uid, // Use Firebase UID as password for backend sync
+        name: firebaseUser.displayName || 'User'
+      };
+
+      try {
+        const response = await this.register(userData.email, userData.password, userData.name);
+        return response.user;
+      } catch (error) {
+        if (error instanceof Error && error.message.includes('already exists')) {
+          // User already exists, create a user object with Firebase data
+          // In a real app, you'd implement a proper find endpoint
+          return {
+            _id: firebaseUser.uid,
+            email: firebaseUser.email,
+            name: firebaseUser.displayName || 'User',
+            role: 'user',
+            points: 0
+          };
+        }
+        throw error;
+      }
+    } catch (error) {
+      console.error('Find or create user failed:', error);
+      throw error;
+    }
   },
 
   async updateDetails(email: string, data: { name?: string; phone?: string; address?: string; location?: { latitude: number; longitude: number } }) {
@@ -86,6 +159,23 @@ export const userAPI = {
 
   async getProfile() {
     return getCurrentUser();
+  },
+
+  async createDemoUser() {
+    // Create a demo user for testing purposes
+    const demoUser = {
+      email: `demo_${Date.now()}@civix.app`,
+      password: 'demopassword',
+      name: 'Demo User'
+    };
+
+    try {
+      const response = await this.register(demoUser.email, demoUser.password, demoUser.name);
+      return response.user;
+    } catch (error) {
+      console.error('Demo user creation failed:', error);
+      throw error;
+    }
   },
 
   logout() {
