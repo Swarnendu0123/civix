@@ -14,6 +14,8 @@ import { useTheme } from '@/hooks/useTheme';
 import { Colors } from '@/constants/Colors';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useAuth } from '@/hooks/useAuth';
+import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'expo-image';
 import api from '@/services/api';
 
 export default function RaiseIssueScreen() {
@@ -45,22 +47,63 @@ export default function RaiseIssueScreen() {
     'Accessibility'
   ];
 
-  const handleImageUpload = () => {
+  const handleImageUpload = async () => {
+    // Request permissions
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Sorry, we need camera roll permissions to upload images.');
+      return;
+    }
+
     Alert.alert(
       'Select Image Source',
       'Choose how you want to add an image',
       [
-        { text: 'Camera', onPress: () => {
-          setSelectedImage('camera');
-          Alert.alert('Camera', 'Would open camera to take photo');
-        }},
-        { text: 'Gallery', onPress: () => {
-          setSelectedImage('gallery'); 
-          Alert.alert('Gallery', 'Would open gallery to select photo');
-        }},
+        { text: 'Camera', onPress: () => openCamera() },
+        { text: 'Gallery', onPress: () => openGallery() },
         { text: 'Cancel', style: 'cancel' }
       ]
     );
+  };
+
+  const openCamera = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Sorry, we need camera permissions to take photos.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setSelectedImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to open camera. Please try again.');
+    }
+  };
+
+  const openGallery = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setSelectedImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to open gallery. Please try again.');
+    }
   };
 
   const handleLocationDetect = () => {
@@ -169,8 +212,11 @@ export default function RaiseIssueScreen() {
           <TouchableOpacity style={styles.imageUploadArea} onPress={handleImageUpload}>
             {selectedImage ? (
               <View style={styles.imagePreview}>
-                <IconSymbol name="photo.fill" size={48} color="#10B981" />
-                <Text style={styles.imageSelectedText}>Image Selected ({selectedImage})</Text>
+                <Image 
+                  source={{ uri: selectedImage }} 
+                  style={styles.selectedImagePreview}
+                  contentFit="cover"
+                />
                 <Text style={styles.imageTapText}>Tap to change</Text>
               </View>
             ) : (
@@ -392,6 +438,12 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
     alignItems: 'center',
     backgroundColor: Colors[colorScheme].tint + '10',
     borderRadius: 10,
+    position: 'relative',
+  },
+  selectedImagePreview: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 10,
   },
   imageSelectedText: {
     fontSize: 16,
@@ -403,6 +455,14 @@ const createStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
     fontSize: 14,
     color: Colors[colorScheme].tabIconDefault,
     marginTop: 4,
+    textAlign: 'center',
+    position: 'absolute',
+    bottom: 8,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    color: 'white',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   titleInput: {
     borderWidth: 1,

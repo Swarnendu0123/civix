@@ -101,7 +101,7 @@ export default function HomeScreen() {
   };
 
   const handleJoinEvent = () => {
-    Alert.alert('Coming Soon', 'Event functionality will be available soon');
+    router.push('/events');
   };
 
   const handleMapView = () => {

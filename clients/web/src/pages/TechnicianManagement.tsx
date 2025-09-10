@@ -250,7 +250,7 @@ const TechnicianManagement: React.FC = () => {
                 <select
                   value={filterBy}
                   onChange={(e) => setFilterBy(e.target.value)}
-                  className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ease-in-out hover:border-gray-400 bg-white shadow-sm"
                 >
                   <option value="all">All Specializations</option>
                   {specializations.map(spec => (
@@ -265,7 +265,7 @@ const TechnicianManagement: React.FC = () => {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as 'rating' | 'avgResolutionTime' | 'openTickets')}
-                  className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ease-in-out hover:border-gray-400 bg-white shadow-sm"
                 >
                   <option value="rating">Best Rated</option>
                   <option value="avgResolutionTime">Fastest Resolve Time</option>

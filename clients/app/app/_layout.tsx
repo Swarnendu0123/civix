@@ -24,6 +24,7 @@ function RootLayoutContent() {
       <AuthGate>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="events" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
         </Stack>
       </AuthGate>

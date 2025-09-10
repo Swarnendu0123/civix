@@ -78,12 +78,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      await firebaseAuth.signOut();
+      // Always clear local state first
       setUser(null);
       setIsAuthenticated(false);
       setAuthToken(null);
+      
+      // Try to sign out from Firebase (may fail if user wasn't logged in via Firebase)
+      try {
+        await firebaseAuth.signOut();
+      } catch (firebaseError) {
+        console.log('Firebase signout failed, but local state cleared:', firebaseError);
+      }
+      
     } catch (error) {
       console.error('Logout error:', error);
+      // Even if there's an error, ensure user is logged out locally
+      setUser(null);
+      setIsAuthenticated(false);
+      setAuthToken(null);
     }
   };
 
