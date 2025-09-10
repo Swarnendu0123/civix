@@ -119,11 +119,16 @@ router.post('/create', async (req, res) => {
 
     await newTicket.save();
 
-    // Add ticket reference to user's issues array using MongoDB _id
+    // Add ticket reference to user's issues array and award 10 points using MongoDB _id
     await User.findByIdAndUpdate(
       creator._id, // Use the MongoDB ObjectId
-      { $push: { issues: newTicket._id } }
+      { 
+        $push: { issues: newTicket._id },
+        $inc: { points: 10 } // Award 10 points for creating a ticket
+      }
     );
+
+    console.log(`Awarded 10 points to user ${creator.name} for creating ticket: ${newTicket.issue_name}`);
 
     // Populate creator and authority info for response
     const populatedTicket = await Ticket.findById(newTicket._id)

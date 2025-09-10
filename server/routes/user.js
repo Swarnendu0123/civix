@@ -186,4 +186,46 @@ router.put('/update/role/:email', async (req, res) => {
   }
 });
 
+// GET /api/user/profile/:email - Get user profile by email
+router.get('/profile/:email', async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    // Find user by email
+    const user = await User.findOne({ email }).populate('issues');
+    if (!user) {
+      return res.status(404).json({ 
+        error: 'User not found' 
+      });
+    }
+
+    // Return user without password
+    const userResponse = {
+      _id: user._id,
+      email: user.email,
+      name: user.name,
+      phone: user.phone,
+      address: user.address,
+      location: user.location,
+      role: user.role,
+      isTechnician: user.isTechnician,
+      issues: user.issues,
+      points: user.points,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    };
+
+    res.json({
+      message: 'User profile retrieved successfully',
+      user: userResponse
+    });
+
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ 
+      error: 'Internal server error' 
+    });
+  }
+});
+
 module.exports = router;

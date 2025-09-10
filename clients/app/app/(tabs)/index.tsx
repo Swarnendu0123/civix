@@ -15,6 +15,7 @@ import { IconSymbol } from "@/components/ui/IconSymbol";
 import { useAuth } from "@/hooks/useAuth";
 import { router } from "expo-router";
 import api from "@/services/api";
+import TicketDetailModal from "@/components/TicketDetailModal";
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
@@ -26,6 +27,8 @@ export default function HomeScreen() {
   });
   const [recentTickets, setRecentTickets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     const fetchHomeData = async () => {
@@ -82,6 +85,16 @@ export default function HomeScreen() {
 
   const handleReportIssue = () => {
     router.push("/raise-issue");
+  };
+
+  const handleTicketPress = (ticket: any) => {
+    setSelectedTicket(ticket);
+    setModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false);
+    setSelectedTicket(null);
   };
 
   const styles = createStyles(colorScheme);
@@ -147,14 +160,18 @@ export default function HomeScreen() {
         {/* Recent Tickets */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Recent Tickets Feed</Text>
-          {recentTickets.map((ticket) => (
-            <View key={ticket.id} style={styles.ticketCard}>
+          {recentTickets.map((ticket: any) => (
+            <TouchableOpacity 
+              key={ticket.id || ticket._id} 
+              style={styles.ticketCard}
+              onPress={() => handleTicketPress(ticket)}
+            >
               <View style={styles.ticketHeader}>
-                <Text style={styles.ticketTitle}>{ticket.title}</Text>
+                <Text style={styles.ticketTitle}>{ticket.title || ticket.issue_name}</Text>
                 <View
                   style={[
                     styles.statusBadge,
-                    { backgroundColor: getStatusColor(ticket.statusColor) },
+                    { backgroundColor: getStatusColor(ticket.statusColor || ticket.status) },
                   ]}
                 >
                   <Text style={styles.statusText}>{ticket.status}</Text>
@@ -167,24 +184,34 @@ export default function HomeScreen() {
                 </Text>
                 <View style={styles.upvoteContainer}>
                   <IconSymbol name="arrow.up" size={16} color="#6B7280" />
-                  <Text style={styles.upvoteText}>{ticket.upvotes}</Text>
+                  <Text style={styles.upvoteText}>{ticket.upvotes || ticket.votes?.upvotes || 0}</Text>
                 </View>
               </View>
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
       </ScrollView>
+
+      <TicketDetailModal
+        visible={modalVisible}
+        ticket={selectedTicket}
+        onClose={handleCloseModal}
+        currentUserId={user.id}
+      />
     </SafeAreaView>
   );
 }
 
-const getStatusColor = (color: string) => {
-  switch (color) {
+const getStatusColor = (status: string) => {
+  switch (status) {
     case "red":
+    case "open":
       return "#EF4444";
     case "orange":
+    case "in process":
       return "#F59E0B";
     case "green":
+    case "resolved":
       return "#10B981";
     default:
       return "#6B7280";
