@@ -52,6 +52,7 @@ interface Ticket {
 interface TicketDetailModalProps {
   visible: boolean;
   ticket: Ticket | null;
+  setSelectedTicket: (newTicket: Ticket) => void;
   onClose: () => void;
   onVote?: (ticketId: string, voteType: "upvote" | "downvote") => void;
   currentUserEmail?: string;
@@ -61,6 +62,7 @@ interface TicketDetailModalProps {
 const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
   visible,
   ticket,
+  setSelectedTicket,
   onClose,
   onVote,
   currentUserEmail,
@@ -160,20 +162,15 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
 
     try {
       // Call the backend API to register the vote
-      await ticketsAPI.voteTicket(ticket._id, voteType);
+      const response = await ticketsAPI.voteTicket(ticket._id, voteType);
 
-      // Update the local state
-      if (voteType === "upvote") {
-        ticket.votes.upvotes.push(currentUserEmail);
-        ticket.votes.downvotes = ticket.votes.downvotes.filter(
-          (email: string) => email !== currentUserEmail
-        );
-      } else {
-        ticket.votes.downvotes.push(currentUserEmail);
-        ticket.votes.upvotes = ticket.votes.upvotes.filter(
-          (email: string) => email !== currentUserEmail
-        );
-      }
+      console.log(response);
+
+      // Update the state
+      setSelectedTicket({
+        ...ticket,
+        votes: response.votes,
+      });
 
       Alert.alert("Success", `You have successfully ${voteType}d the ticket.`);
     } catch (error) {

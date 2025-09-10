@@ -312,6 +312,7 @@ export default function HomeScreen() {
       <TicketDetailModal
         visible={modalVisible}
         ticket={selectedTicket}
+        setSelectedTicket={setSelectedTicket}
         onClose={handleCloseModal}
         currentUserEmail={user?.email}
         loading={fetchingTicketDetails}
