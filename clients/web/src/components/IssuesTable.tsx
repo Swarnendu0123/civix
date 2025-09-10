@@ -1,21 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { 
-  FiSearch, 
-  FiMapPin, 
-  FiThumbsUp, 
-  FiThumbsDown,
-  FiClock,
-  FiFilter,
-  FiEye
-} from 'react-icons/fi';
-import api from '../services/api';
 import type { Ticket } from '../types';
+import { ticketsAPI as apiTickets } from '../services/api';
 
-interface ticketsTableProps {
-  onViewticket: (ticket: Ticket) => void;
-}
+interface TicketsTableProps { onViewticket: (ticket: Ticket) => void; }
 
-const ticketsTable: React.FC<ticketsTableProps> = ({ onViewticket }) => {
+const TicketsTable: React.FC<TicketsTableProps> = ({ onViewticket }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -26,348 +15,186 @@ const ticketsTable: React.FC<ticketsTableProps> = ({ onViewticket }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch tickets from API
   useEffect(() => {
+    let mounted = true;
     const fetchTickets = async () => {
       try {
         setLoading(true);
-        const response = await api.tickets.getTickets(); // Get all tickets
-        setTickets(response.tickets || []);
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching tickets:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load tickets');
+        const response = await apiTickets.getTickets();
+        if (mounted) {
+          const list: Ticket[] = response?.tickets || [];
+          list.forEach(t => {
+            // @ts-ignore
+            if (t.opening_time && typeof t.opening_time === 'string') t.opening_time = new Date(t.opening_time) as any;
+          });
+          setTickets(list);
+          setError(null);
+        }
+      } catch (err: any) {
+        if (mounted) setError(err.message || 'Failed to load tickets');
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
-
     fetchTickets();
+    return () => { mounted = false; };
   }, []);
 
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    tickets.forEach(t => t.ticket_category && set.add(t.ticket_category));
+    return Array.from(set);
+  }, [tickets]);
+
   const filteredAndSortedTickets = useMemo(() => {
+    const urgencyRank: Record<string, number> = { critical: 3, moderate: 2, low: 1 };
     return tickets
-      .filter(ticket => {
-        if (statusFilter !== 'all' && ticket.status !== statusFilter) return false;
-        if (categoryFilter !== 'all' && ticket.ticket_category !== categoryFilter) return false;
-        if (urgencyFilter !== 'all' && ticket.urgency !== urgencyFilter) return false;
-        if (searchQuery) {
-          const query = searchQuery.toLowerCase();
-          return (
-            ticket.ticket_name.toLowerCase().includes(query) ||
-            ticket.ticket_description.toLowerCase().includes(query) ||
-            ticket.creator_name.toLowerCase().includes(query) ||
-            `${ticket.location.latitude}, ${ticket.location.longitude}`.toLowerCase().includes(query)
-          );
-        }
-        return true;
-      })
+      .filter(t => (
+        (statusFilter === 'all' || t.status === statusFilter) &&
+        (categoryFilter === 'all' || t.ticket_category === categoryFilter) &&
+        (urgencyFilter === 'all' || t.urgency === urgencyFilter) &&
+        (!searchQuery || [
+          t.ticket_name,
+          t.ticket_description,
+          t.creator_name,
+          `${t.location?.latitude ?? ''}`,
+          `${t.location?.longitude ?? ''}`
+        ].some(field => field?.toString().toLowerCase().includes(searchQuery.toLowerCase())))
+      ))
       .sort((a, b) => {
-        let comparison = 0;
-        switch (sortBy) {
-          case 'opening_time':
-            comparison = new Date(a.opening_time).getTime() - new Date(b.opening_time).getTime();
-            break;
-          case 'votes': {
-            const aScore = a.votes.upvotes - a.votes.downvotes;
-            const bScore = b.votes.upvotes - b.votes.downvotes;
-            comparison = bScore - aScore;
-            break;
-          }
-          case 'urgency': {
-            const urgencyOrder = { critical: 3, moderate: 2, low: 1 };
-            comparison = urgencyOrder[b.urgency] - urgencyOrder[a.urgency];
-            break;
-          }
+        let cmp = 0;
+        if (sortBy === 'opening_time') {
+          cmp = new Date(a.opening_time).getTime() - new Date(b.opening_time).getTime();
+        } else if (sortBy === 'votes') {
+          const aScore = (a.votes?.upvotes || 0) - (a.votes?.downvotes || 0);
+          const bScore = (b.votes?.upvotes || 0) - (b.votes?.downvotes || 0);
+          cmp = aScore - bScore;
+        } else if (sortBy === 'urgency') {
+          cmp = (urgencyRank[a.urgency] || 0) - (urgencyRank[b.urgency] || 0);
         }
-        return sortOrder === 'desc' ? -comparison : comparison;
+        return sortOrder === 'desc' ? -cmp : cmp;
       });
   }, [tickets, searchQuery, statusFilter, categoryFilter, urgencyFilter, sortBy, sortOrder]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'resolved':
-        return 'bg-green-100 text-green-800';
-      case 'in process':
-        return 'bg-blue-100 text-blue-800';
-      case 'open':
-        return 'bg-yellow-100 text-yellow-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+  const getStatusColor = (status: string) => ({
+    resolved: 'bg-green-100 text-green-800',
+    'in process': 'bg-blue-100 text-blue-800',
+    open: 'bg-yellow-100 text-yellow-800'
+  } as Record<string,string>)[status] || 'bg-gray-100 text-gray-800';
+
+  const getUrgencyColor = (urgency: string) => ({
+    critical: 'bg-red-100 text-red-800',
+    moderate: 'bg-orange-100 text-orange-800',
+    low: 'bg-green-100 text-green-800'
+  } as Record<string,string>)[urgency] || 'bg-gray-100 text-gray-800';
+
+  const handleSort = (col: 'opening_time' | 'votes' | 'urgency') => {
+    if (sortBy === col) setSortOrder(o => o === 'asc' ? 'desc' : 'asc');
+    else { setSortBy(col); setSortOrder('desc'); }
   };
 
-  const getUrgencyColor = (urgency: string) => {
-    switch (urgency) {
-      case 'critical':
-        return 'bg-red-100 text-red-800';
-      case 'moderate':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'low':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  if (loading) return (
+    <div className="flex justify-center py-10">
+      <div className="text-sm text-gray-500 animate-pulse">Loading tickets...</div>
+    </div>
+  );
 
-  const categories = [...new Set(tickets.map(ticket => ticket.ticket_category))];
-
-  const handleSort = (column: 'opening_time' | 'votes' | 'urgency') => {
-    if (sortBy === column) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(column);
-      setSortOrder('desc');
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-6">
-        <div className="text-center py-12">
-          <div className="text-red-500 text-lg mb-2">Error loading tickets</div>
-          <div className="text-gray-600">{error}</div>
-        </div>
-      </div>
-    );
-  }
+  if (error) return (
+    <div className="p-6 bg-red-50 rounded-md text-sm text-red-600">
+      Failed to load tickets: {error}
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="md:flex md:items-center md:justify-between">
-        <div className="flex-1 min-w-0">
-          <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-            ticket Management
-          </h2>
-          <p className="mt-1 text-sm text-gray-500">
-            Manage and track municipal tickets reported by citizens
-          </p>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          {/* Search */}
-          <div className="lg:col-span-2">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FiSearch className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="Search tickets..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              />
-            </div>
-          </div>
-
-          {/* Status Filter */}
-          <div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="block w-full pl-3 pr-8 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-            >
-              <option value="all">All Status</option>
-              <option value="open">Open</option>
-              <option value="in process">In Process</option>
-              <option value="resolved">Resolved</option>
+    <div className="space-y-4">
+      <div className="bg-white p-4 rounded-lg shadow">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          <input
+            className="border rounded px-3 py-2 text-sm"
+            placeholder="Search..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
+          <select className="border rounded px-3 py-2 text-sm" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+            <option value="all">All Statuses</option>
+            <option value="open">Open</option>
+            <option value="in process">In Process</option>
+            <option value="resolved">Resolved</option>
+          </select>
+          <select className="border rounded px-3 py-2 text-sm" value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
+            <option value="all">All Categories</option>
+            {categories.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select className="border rounded px-3 py-2 text-sm" value={urgencyFilter} onChange={e => setUrgencyFilter(e.target.value)}>
+            <option value="all">All Urgencies</option>
+            <option value="critical">Critical</option>
+            <option value="moderate">Moderate</option>
+            <option value="low">Low</option>
+          </select>
+          <div className="flex gap-2 items-center">
+            <label className="text-xs font-medium text-gray-500">Sort:</label>
+            <select className="border rounded px-2 py-1 text-sm" value={sortBy} onChange={e => setSortBy(e.target.value as any)}>
+              <option value="opening_time">Opened</option>
+              <option value="votes">Votes</option>
+              <option value="urgency">Urgency</option>
             </select>
-          </div>
-
-          {/* Category Filter */}
-          <div>
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="block w-full pl-3 pr-8 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-            >
-              <option value="all">All Categories</option>
-              {categories.map(category => (
-                <option key={category} value={category}>
-                  {category.charAt(0).toUpperCase() + category.slice(1)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Urgency Filter */}
-          <div>
-            <select
-              value={urgencyFilter}
-              onChange={(e) => setUrgencyFilter(e.target.value)}
-              className="block w-full pl-3 pr-8 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-            >
-              <option value="all">All Urgency</option>
-              <option value="critical">Critical</option>
-              <option value="moderate">Moderate</option>
-              <option value="low">Low</option>
-            </select>
+            <button
+              className="text-xs px-2 py-1 border rounded"
+              onClick={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')}
+            >{sortOrder === 'asc' ? 'Asc' : 'Desc'}</button>
           </div>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
+      <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-full divide-y divide-gray-200 text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  ticket
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Reporter
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Location
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
-                  onClick={() => handleSort('urgency')}
-                >
-                  <div className="flex items-center">
-                    Urgency
-                    {sortBy === 'urgency' && (
-                      <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                    )}
-                  </div>
-                </th>
-                <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
-                  onClick={() => handleSort('votes')}
-                >
-                  <div className="flex items-center">
-                    Votes
-                    {sortBy === 'votes' && (
-                      <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                    )}
-                  </div>
-                </th>
-                <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
-                  onClick={() => handleSort('opening_time')}
-                >
-                  <div className="flex items-center">
-                    Created
-                    {sortBy === 'opening_time' && (
-                      <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                    )}
-                  </div>
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+                <th className="px-4 py-2 text-left font-medium text-gray-600">Name</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-600">Status</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-600">Category</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-600 cursor-pointer" onClick={() => handleSort('urgency')}>Urgency</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-600 cursor-pointer" onClick={() => handleSort('votes')}>Votes</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-600 cursor-pointer" onClick={() => handleSort('opening_time')}>Opened</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-600">Location</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-600">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredAndSortedTickets.map((ticket) => (
-                <tr key={ticket._id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10">
-                        <img
-                          className="h-10 w-10 rounded object-cover"
-                          src={ticket.image_url}
-                          alt=""
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = 'https://via.placeholder.com/40x40?text=IMG';
-                          }}
-                        />
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900 max-w-xs truncate">
-                          {ticket.ticket_name}
-                        </div>
-                        <div className="text-sm text-gray-500 capitalize">
-                          {ticket.ticket_category}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{ticket.creator_name}</div>
-                    <div className="text-sm text-gray-500">ID: {ticket.creator_id.slice(-6)}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center text-sm text-gray-500">
-                      <FiMapPin className="mr-1 h-4 w-4" />
-                      <span className="max-w-xs truncate">
-                        {ticket.location.latitude}, {ticket.location.longitude}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(ticket.status)}`}>
-                      {ticket.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getUrgencyColor(ticket.urgency)}`}>
-                      {ticket.urgency}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <div className="flex items-center space-x-2">
-                      <div className="flex items-center text-green-600">
-                        <FiThumbsUp className="h-4 w-4 mr-1" />
-                        {ticket.votes.upvotes}
-                      </div>
-                      <div className="flex items-center text-red-600">
-                        <FiThumbsDown className="h-4 w-4 mr-1" />
-                        {ticket.votes.downvotes}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="flex items-center">
-                      <FiClock className="h-4 w-4 mr-1" />
-                      {new Date(ticket.opening_time).toLocaleDateString()}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => onViewticket(ticket)}
-                      className="text-blue-600 hover:text-blue-900 inline-flex items-center"
-                    >
-                      <FiEye className="h-4 w-4 mr-1" />
-                      View
-                    </button>
-                  </td>
-                </tr>
-              ))}
+            <tbody className="divide-y divide-gray-100">
+              {filteredAndSortedTickets.map(t => {
+                const voteScore = (t.votes?.upvotes || 0) - (t.votes?.downvotes || 0);
+                return (
+                  <tr key={t._id} className="hover:bg-gray-50">
+                    <td className="px-4 py-2 font-medium text-gray-900 max-w-[220px] truncate">{t.ticket_name}</td>
+                    <td className="px-4 py-2">
+                      <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(t.status)}`}>{t.status}</span>
+                    </td>
+                    <td className="px-4 py-2 text-gray-700">{t.ticket_category}</td>
+                    <td className="px-4 py-2">
+                      <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${getUrgencyColor(t.urgency)}`}>{t.urgency}</span>
+                    </td>
+                    <td className="px-4 py-2 text-gray-700">{voteScore}</td>
+                    <td className="px-4 py-2 text-gray-500 whitespace-nowrap">{new Date(t.opening_time).toLocaleDateString()}</td>
+                    <td className="px-4 py-2 text-gray-500 text-xs">{t.location ? `${t.location.latitude.toFixed(2)}, ${t.location.longitude.toFixed(2)}` : '-'}</td>
+                    <td className="px-4 py-2">
+                      <button
+                        onClick={() => onViewticket(t)}
+                        className="text-indigo-600 hover:text-indigo-800 text-xs font-medium"
+                      >View</button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
-        
         {filteredAndSortedTickets.length === 0 && (
-          <div className="text-center py-12">
-            <FiFilter className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No tickets found</h3>
-            <p className="mt-1 text-sm text-gray-500">Try adjusting your search or filter criteria.</p>
-          </div>
+          <div className="p-8 text-center text-sm text-gray-500">No tickets match your filters.</div>
         )}
       </div>
     </div>
   );
 };
 
-export default ticketsTable;
+export default TicketsTable;

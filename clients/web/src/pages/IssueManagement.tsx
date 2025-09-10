@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import ticketsTable from '../components/ticketsTable';
-import ticketDetailModal from '../components/ticketDetailModal';
+import TicketsTable from '../components/IssuesTable';
+import TicketDetailModal from '../components/IssueDetailModal';
 import type { Ticket } from '../types';
 
-const ticketManagement: React.FC = () => {
+const TicketManagement: React.FC = () => {
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleViewticket = (ticket: Ticket) => {
+  const handleViewTicket = (ticket: Ticket) => {
     setSelectedTicket(ticket);
     setIsModalOpen(true);
   };
@@ -19,10 +19,10 @@ const ticketManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <ticketsTable onViewticket={handleViewticket} />
-      
+      <TicketsTable onViewticket={handleViewTicket} />
+
       {selectedTicket && (
-        <ticketDetailModal
+        <TicketDetailModal
           ticket={selectedTicket}
           isOpen={isModalOpen}
           onClose={handleCloseModal}
@@ -32,4 +32,4 @@ const ticketManagement: React.FC = () => {
   );
 };
 
-export default ticketManagement;
+export default TicketManagement;

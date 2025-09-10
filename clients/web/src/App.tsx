@@ -5,7 +5,7 @@ import { useAuth } from './hooks/useAuth';
 import Layout from './components/Layout/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import ticketManagement from './pages/ticketManagement';
+import IssueManagement from './pages/IssueManagement';
 import TechnicianManagement from './pages/TechnicianManagement';
 import UserManagement from './pages/UserManagement';
 import './App.css';
@@ -39,7 +39,7 @@ const App: React.FC = () => {
             >
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
-              <Route path="tickets" element={<ticketManagement />} />
+              <Route path="tickets" element={<IssueManagement />} />
               <Route path="technicians" element={<TechnicianManagement />} />
               <Route path="users" element={<UserManagement />} />
               {/* Placeholder for Map route */}
