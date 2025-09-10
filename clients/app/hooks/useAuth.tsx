@@ -102,7 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // });
 
     // return unsubscribe;
-  }, []);
+  // }, []);
 
   const login = (userData: any) => {
     setUser(userData);
