@@ -43,6 +43,7 @@ export default function MyTicketsScreen() {
           user?.email
         );
         if (userProfile?.tickets) {
+          console.log("Fetched user profile tickets:", userProfile.tickets);
           setUserTickets(userProfile.tickets);
           return;
         }
@@ -54,6 +55,8 @@ export default function MyTicketsScreen() {
       const allTicketsResponse = await ticketsAPI.getTickets();
       const allTickets = allTicketsResponse.tickets || [];
 
+      console.log("Fetched all tickets:", allTickets);
+
       // Filter tickets created by the current user
       const myTickets = allTickets.filter(
         (ticket: any) =>
@@ -61,6 +64,7 @@ export default function MyTicketsScreen() {
           ticket.creator_email === user?.email
       );
 
+      console.log("Filtered user tickets:", myTickets);
       setUserTickets(myTickets);
     } catch (error) {
       console.error("Error fetching user tickets:", error);

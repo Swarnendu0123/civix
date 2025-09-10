@@ -300,7 +300,7 @@ export default function HomeScreen() {
                 <View style={styles.upvoteContainer}>
                   <IconSymbol name="arrow.up" size={16} color="#6B7280" />
                   <Text style={styles.upvoteText}>
-                    {ticket.upvotes || ticket.votes?.upvotes || 0}
+                    {ticket.votes?.upvotes.length || 0}
                   </Text>
                 </View>
               </View>
