@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { useTheme } from "@/hooks/useTheme";
 import { Colors } from "@/constants/Colors";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,7 +19,7 @@ import api, { ticketsAPI } from "@/services/api";
 import TicketDetailModal from "@/components/TicketDetailModal";
 
 export default function HomeScreen() {
-  const colorScheme = useColorScheme();
+  const { colorScheme } = useTheme();
   const { user } = useAuth();
   const [analytics, setAnalytics] = useState({
     activeTickets: 0,
@@ -59,7 +60,7 @@ export default function HomeScreen() {
             // Keep original data for modal access
             return {
               ...mobileFormat,
-              _originalTicket: ticket
+              _originalTicket: ticket,
             };
           });
           setRecentTickets(transformedTickets);
@@ -90,35 +91,35 @@ export default function HomeScreen() {
   };
 
   const handleReportticket = () => {
-    router.push("/raise-ticket");
+    router.push("/raise_ticket");
   };
 
   const handleTicketPress = async (ticket: any) => {
     try {
       setFetchingTicketDetails(true);
       setModalVisible(true);
-      
+
       // If we have the original ticket data, use it directly
       if (ticket._originalTicket) {
         setSelectedTicket(ticket._originalTicket);
         setFetchingTicketDetails(false);
         return;
       }
-      
+
       // Try to fetch fresh ticket details from the server using the original ticket ID
       const ticketId = ticket._id || ticket.id;
       const freshTicketResponse = await ticketsAPI.getTicket(ticketId);
-      console.log('Fresh ticket data:', freshTicketResponse.ticket);
+      console.log("Fresh ticket data:", freshTicketResponse.ticket);
       setSelectedTicket(freshTicketResponse.ticket);
     } catch (error: any) {
-      console.error('Failed to fetch ticket details:', error);
-      
+      console.error("Failed to fetch ticket details:", error);
+
       // Fallback: Convert the mobile format ticket back to server format for the modal
       const fallbackTicket = {
         _id: ticket._id || ticket.id,
-        creator_name: ticket.creatorName || 'Unknown',
-        creator_id: ticket.creatorId || 'unknown',
-        status: ticket.actualStatus || ticket.status || 'open',
+        creator_name: ticket.creatorName || "Unknown",
+        creator_id: ticket.creatorId || "unknown",
+        status: ticket.actualStatus || ticket.status || "open",
         ticket_name: ticket.title,
         ticket_category: ticket.category,
         ticket_description: ticket.description,
@@ -126,23 +127,30 @@ export default function HomeScreen() {
         tags: ticket.tags || [],
         votes: {
           upvotes: ticket.upvotes || 0,
-          downvotes: ticket.downvotes || 0
+          downvotes: ticket.downvotes || 0,
         },
-        urgency: ticket.status === 'red' ? 'critical' : 
-                 ticket.status === 'orange' ? 'moderate' : 'low',
+        urgency:
+          ticket.status === "red"
+            ? "critical"
+            : ticket.status === "orange"
+            ? "moderate"
+            : "low",
         location: {
-          latitude: parseFloat(ticket.location?.split(',')[0]) || 0,
-          longitude: parseFloat(ticket.location?.split(',')[1]) || 0
+          latitude: parseFloat(ticket.location?.split(",")[0]) || 0,
+          longitude: parseFloat(ticket.location?.split(",")[1]) || 0,
         },
         opening_time: ticket.timestamp,
         createdAt: ticket.timestamp,
         updatedAt: ticket.timestamp,
         closing_time: null,
-        authority: null
+        authority: null,
       };
-      
+
       setSelectedTicket(fallbackTicket);
-      Alert.alert('Warning', 'Could not load latest ticket details. Showing cached data.');
+      Alert.alert(
+        "Warning",
+        "Could not load latest ticket details. Showing cached data."
+      );
     } finally {
       setFetchingTicketDetails(false);
     }
@@ -153,37 +161,45 @@ export default function HomeScreen() {
     setSelectedTicket(null);
   };
 
-  const handleVote = async (ticketId: string, voteType: 'upvote' | 'downvote') => {
+  const handleVote = async (
+    ticketId: string,
+    voteType: "upvote" | "downvote"
+  ) => {
     if (!user?.email) {
-      Alert.alert('Error', 'You must be logged in to vote');
+      Alert.alert("Error", "You must be logged in to vote");
       return;
     }
 
     try {
       // For now, just update the vote count locally as server might not be available
-      if (selectedTicket && typeof selectedTicket === 'object') {
-        const currentVotes = (selectedTicket as any).votes || { upvotes: 0, downvotes: 0 };
+      if (selectedTicket && typeof selectedTicket === "object") {
+        const currentVotes = (selectedTicket as any).votes || {
+          upvotes: 0,
+          downvotes: 0,
+        };
         const updatedTicket = {
           ...(selectedTicket as any),
           votes: {
-            upvotes: voteType === 'upvote' ? 
-              currentVotes.upvotes + 1 : 
-              currentVotes.upvotes,
-            downvotes: voteType === 'downvote' ? 
-              currentVotes.downvotes + 1 : 
-              currentVotes.downvotes
-          }
+            upvotes:
+              voteType === "upvote"
+                ? currentVotes.upvotes + 1
+                : currentVotes.upvotes,
+            downvotes:
+              voteType === "downvote"
+                ? currentVotes.downvotes + 1
+                : currentVotes.downvotes,
+          },
         };
         setSelectedTicket(updatedTicket);
-        Alert.alert('Success', `Ticket ${voteType}d successfully! (Demo mode)`);
+        Alert.alert("Success", `Ticket ${voteType}d successfully! (Demo mode)`);
       }
     } catch (error) {
-      console.error('Failed to vote:', error);
-      Alert.alert('Error', 'Failed to submit vote. Please try again.');
+      console.error("Failed to vote:", error);
+      Alert.alert("Error", "Failed to submit vote. Please try again.");
     }
   };
 
-  const styles = createStyles(colorScheme ?? 'light');
+  const styles = createStyles(colorScheme);
 
   if (loading) {
     return (
@@ -220,7 +236,6 @@ export default function HomeScreen() {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
-
         {/* Action Buttons */}
         <View style={styles.actionSection}>
           <TouchableOpacity
@@ -236,17 +251,23 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Recent Tickets Feed</Text>
           {recentTickets.map((ticket: any) => (
-            <TouchableOpacity 
-              key={ticket.id || ticket._id} 
+            <TouchableOpacity
+              key={ticket.id || ticket._id}
               style={styles.ticketCard}
               onPress={() => handleTicketPress(ticket)}
             >
               <View style={styles.ticketHeader}>
-                <Text style={styles.ticketTitle}>{ticket.title || ticket.ticket_name}</Text>
+                <Text style={styles.ticketTitle}>
+                  {ticket.title || ticket.ticket_name}
+                </Text>
                 <View
                   style={[
                     styles.statusBadge,
-                    { backgroundColor: getStatusColor(ticket.statusColor || ticket.status) },
+                    {
+                      backgroundColor: getStatusColor(
+                        ticket.statusColor || ticket.status
+                      ),
+                    },
                   ]}
                 >
                   <Text style={styles.statusText}>{ticket.status}</Text>
@@ -259,7 +280,9 @@ export default function HomeScreen() {
                 </Text>
                 <View style={styles.upvoteContainer}>
                   <IconSymbol name="arrow.up" size={16} color="#6B7280" />
-                  <Text style={styles.upvoteText}>{ticket.upvotes || ticket.votes?.upvotes || 0}</Text>
+                  <Text style={styles.upvoteText}>
+                    {ticket.upvotes || ticket.votes?.upvotes || 0}
+                  </Text>
                 </View>
               </View>
             </TouchableOpacity>

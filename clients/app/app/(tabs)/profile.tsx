@@ -14,6 +14,7 @@ import { IconSymbol } from "@/components/ui/IconSymbol";
 import { useAuth } from "@/hooks/useAuth";
 import EditProfileModal from "@/components/EditProfileModal";
 import { fetchUserDetails } from "@/services/api";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function ProfileScreen() {
   const { colorScheme } = useTheme();
@@ -148,6 +149,9 @@ export default function ProfileScreen() {
             </Text>
           </View>
         </View>
+
+        {/* Theme Toggle - now placed below user info card */}
+        <ThemeToggle />
 
         {/* Edit Button */}
         <View>
