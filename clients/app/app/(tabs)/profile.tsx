@@ -31,6 +31,7 @@ export default function ProfileScreen() {
     createdAt: {
       $date: "2025-09-10T13:44:14.769Z",
     },
+    tickets: [],
   });
   const [editModalVisible, setEditModalVisible] = useState(false);
 
@@ -252,7 +253,7 @@ export default function ProfileScreen() {
           <Text style={styles.sectionTitle}>Your Tickets</Text>
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{user.tickets?.length || 0}</Text>
+              <Text style={styles.statNumber}>{userdetails.tickets?.length || 0}</Text>
               <Text style={styles.statLabel}>Tickets Reported</Text>
             </View>
           </View>

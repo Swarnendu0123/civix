@@ -14,6 +14,7 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 import { useTheme } from "@/hooks/useTheme";
 import { Colors } from "@/constants/Colors";
 import { IconSymbol } from "@/components/ui/IconSymbol";
+import { Image } from "react-native";
 import { useAuth } from "@/hooks/useAuth";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import { ticketsAPI, userAPI } from "@/services/api";
@@ -286,7 +287,13 @@ export default function MyTicketsScreen() {
                   </Text>
                 </View>
 
-                <Text style={styles.ticketTitle}>{ticket.issue_name}</Text>
+                {/* Fix: Use fallback for ticket title if issue_name is missing */}
+                <Text style={styles.ticketTitle}>
+                  {ticket.issue_name ||
+                    ticket.title ||
+                    ticket.ticket_name ||
+                    "Untitled Ticket"}
+                </Text>
 
                 <View style={styles.categoryContainer}>
                   <IconSymbol
@@ -306,13 +313,13 @@ export default function MyTicketsScreen() {
                 <View style={styles.ticketFooter}>
                   <View style={styles.votesContainer}>
                     <View style={styles.voteItem}>
-                      <IconSymbol name="arrow.up" size={16} color="#10B981" />
+                      <IconSymbol name="arrow.up" size={16} color="#6B7280" />
                       <Text style={styles.voteCount}>
                         {ticket.votes?.upvotes || 0}
                       </Text>
                     </View>
                     <View style={styles.voteItem}>
-                      <IconSymbol name="arrow.down" size={16} color="#EF4444" />
+                      <IconSymbol name="arrow.down" size={16} color="#6B7280" />
                       <Text style={styles.voteCount}>
                         {ticket.votes?.downvotes || 0}
                       </Text>
@@ -494,6 +501,7 @@ const createStyles = (colorScheme: "light" | "dark") =>
       alignItems: "center",
       gap: 4,
     },
+    // Removed voteIcon style since images are no longer used
     voteCount: {
       fontSize: 14,
       fontWeight: "500",
